@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gen IA - Chat</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .typing {
+      align-self: flex-start;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 12px 16px;
+    }
+    .typing span {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--violet);
+      animation: typingBlink 1.2s infinite;
+    }
+    .typing span:nth-child(2) { animation-delay: 0.2s; }
+    .typing span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typingBlink { 0%, 80%, 100% { opacity: 0.2; } 40% { opacity: 1; } }
+  </style>
+</head>
+<body>
+
+  <div class="chat-app">
+
+    <header>
+      <a href="index.html" class="back">←</a>
+
+      <div>
+        <h2>Gen IA</h2>
+        <span>En ligne</span>
+      </div>
+    </header>
+
+    <main id="messages" class="messages">
+
+      <div class="message ai">
+        Salut 👋 Je suis Gen ! Comment puis-je t'aider ?
+      </div>
+
+    </main>
+
+    <form class="input-area" id="chatForm">
+      <input
+        type="text"
+        id="userInput"
+        placeholder="Écris ton message..."
+        autocomplete="off"
+      >
+      <button type="submit">➤</button>
+    </form>
+
+  </div>
+
+<script>
+const form = document.getElementById("chatForm");
+const input = document.getElementById("userInput");
+const messages = document.getElementById("messages");
+
+// Le site est servi par le meme serveur que l'API (gen-server), donc on
+// appelle une URL relative - pas besoin de connaitre l'URL complete.
+const API_URL = "/api/chat";
+
+let history = [
+  { text: "Salut 👋 Je suis Gen ! Comment puis-je t'aider ?", user: false }
+];
+
+function addMessage(text, role) {
+  const el = document.createElement("div");
+  el.className = "message " + role;
+  el.textContent = text;
+  messages.appendChild(el);
+  messages.scrollTop = messages.scrollHeight;
+  return el;
+}
+
+function showTyping() {
+  const el = document.createElement("div");
+  el.className = "message typing";
+  el.id = "typingIndicator";
+  el.innerHTML = "<span></span><span></span><span></span>";
+  messages.appendChild(el);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+function hideTyping() {
+  const el = document.getElementById("typingIndicator");
+  if (el) el.remove();
+}
+
+// Code d'acces simple : evite que n'importe qui tombant sur l'URL publique
+// utilise ton budget API. Doit correspondre a GEN_APP_SECRET du serveur.
+function getAccessCode() {
+  let code = localStorage.getItem('genAccessCode');
+  if (!code) {
+    code = window.prompt("Code d'accès à Gen :");
+    if (code) localStorage.setItem('genAccessCode', code);
+  }
+  return code || '';
+}
+
+form.addEventListener("submit", async function(e){
+  e.preventDefault();
+
+  const text = input.value.trim();
+  if (text === "") return;
+
+  addMessage(text, "user");
+  history.push({ text, user: true });
+  input.value = "";
+  showTyping();
+
+  try {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-gen-secret": getAccessCode()
+      },
+      body: JSON.stringify({ messages: history.slice(-20), mode: "default" })
+    });
+
+    if (response.status === 401) {
+      localStorage.removeItem('genAccessCode');
+      throw new Error("Code d'accès incorrect. Recharge la page pour réessayer.");
+    }
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Erreur serveur");
+
+    hideTyping();
+    addMessage(data.reply, "ai");
+    history.push({ text: data.reply, user: false });
+  } catch (err) {
+    hideTyping();
+    addMessage("Je n'arrive pas à joindre mon cerveau IA (" + err.message + ")", "ai");
+  }
+});
+</script>
+
+</body>
+</html>
