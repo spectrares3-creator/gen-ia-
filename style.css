@@ -10,6 +10,8 @@
   --violet-deep: #7a2cff;
   --violet-pale: #d7a6ff;
   --accent-rgb: 180, 92, 255;
+  --core-light: #f0d9ff;
+  --core-dark: #4d0b7a;
   --text: #efe5f5;
   --text-dim: #8e7a9f;
   --user-bubble: #29103c;
@@ -135,6 +137,7 @@ header {
   padding: 16px 18px;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+  position: relative;
 }
 
 header .back {
@@ -151,6 +154,8 @@ header .back {
   transition: all 0.15s;
 }
 header .back:hover { color: var(--text); border-color: var(--violet-deep); }
+
+.header-titles { display: flex; flex-direction: column; gap: 3px; }
 
 header h2 {
   margin: 0;
@@ -175,6 +180,54 @@ header span::before {
   background: var(--violet);
   box-shadow: 0 0 6px var(--violet);
   display: inline-block;
+}
+
+.header-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.theme-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-dim);
+  font-size: 15px;
+  font-family: inherit;
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.15s;
+  justify-content: center;
+}
+.theme-btn:hover { border-color: var(--violet-deep); color: var(--text); }
+.theme-dot {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--violet);
+  box-shadow: 0 0 6px var(--violet);
+  transition: all 0.3s ease;
+}
+
+.menu-btn {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--violet-pale);
+  font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.menu-btn:hover { border-color: var(--violet-deep); }
+.menu-btn.open {
+  background: linear-gradient(135deg, var(--violet), var(--violet-deep));
+  color: white;
 }
 
 .messages {
@@ -240,3 +293,271 @@ header span::before {
   transition: transform 0.1s;
 }
 .input-area button:active { transform: scale(0.92); }
+
+/* ===== Menu deroulant (modes, outils, conversations) ===== */
+
+.menu-panel {
+  position: absolute;
+  top: 60px;
+  right: 18px;
+  z-index: 20;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 10px;
+  width: 230px;
+  max-height: 70vh;
+  overflow-y: auto;
+  box-shadow: 0 12px 40px -8px rgba(0,0,0,0.6), 0 0 0 1px var(--border);
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+}
+.menu-panel.open { display: flex; }
+
+.menu-label {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  padding: 6px 8px 2px;
+}
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  padding: 9px 8px;
+  border-radius: 9px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+.menu-item:hover { background: var(--surface-2); }
+.menu-item.active {
+  background: linear-gradient(135deg, rgba(var(--accent-rgb),0.22), rgba(var(--accent-rgb),0.12));
+  color: var(--violet-pale);
+}
+.menu-item .menu-icon { width: 18px; text-align: center; flex-shrink: 0; }
+.menu-item .menu-check { margin-left: auto; opacity: 0; }
+.menu-item.active .menu-check { opacity: 1; }
+.menu-divider { height: 1px; background: var(--border); margin: 6px 2px; }
+
+.history-list { display: flex; flex-direction: column; gap: 2px; max-height: 160px; overflow-y: auto; }
+.menu-text-trunc { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
+.history-del {
+  opacity: 0; font-size: 11px; color: var(--text-dim);
+  padding: 3px 5px; border-radius: 6px; flex-shrink: 0;
+}
+.history-item:hover .history-del { opacity: 1; }
+.history-del:hover { color: #ff6b6b; background: rgba(255,255,255,0.08); }
+.menu-empty { font-size: 12px; color: var(--text-dim); padding: 8px; text-align: center; }
+
+/* ===== Selecteur de couleur ===== */
+
+.theme-panel {
+  position: absolute;
+  top: 60px;
+  left: 18px;
+  z-index: 20;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 10px;
+  display: none;
+  gap: 10px;
+  box-shadow: 0 12px 40px -8px rgba(0,0,0,0.6), 0 0 0 1px var(--border);
+}
+.theme-panel.open { display: flex; }
+.theme-swatch {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.18);
+  cursor: pointer;
+  padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.15s;
+}
+.theme-swatch:hover { transform: scale(1.12); }
+.theme-swatch.selected { border-color: var(--text); }
+.theme-swatch .check { font-size: 13px; opacity: 0; }
+.theme-swatch.selected .check { opacity: 1; }
+
+/* ===== Indicateur "en train d'ecrire" ===== */
+
+.typing {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 16px;
+}
+.typing span {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--violet);
+  animation: typingBlink 1.2s infinite;
+}
+.typing span:nth-child(2) { animation-delay: 0.2s; }
+.typing span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typingBlink { 0%, 80%, 100% { opacity: 0.2; } 40% { opacity: 1; } }
+
+/* ===== Effet glitch (/hack) ===== */
+
+.glitching { animation: glitchShake 0.45s steps(3, end); }
+.glitching::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 90;
+  background: repeating-linear-gradient(
+    0deg, rgba(255,255,255,0.06) 0px, rgba(255,255,255,0.06) 1px,
+    transparent 1px, transparent 3px
+  );
+  mix-blend-mode: overlay;
+  animation: glitchFlicker 0.45s steps(2, end);
+}
+@keyframes glitchShake {
+  0%   { filter: none; transform: translate(0,0); }
+  8%   { filter: hue-rotate(90deg) saturate(3) contrast(1.6); transform: translate(-4px, 2px) skewX(2deg); }
+  16%  { filter: hue-rotate(-90deg) contrast(1.8); transform: translate(4px, -2px) skewX(-2deg); }
+  24%  { filter: invert(0.15) contrast(2); transform: translate(-3px, 0); }
+  32%  { filter: none; transform: translate(3px, 1px); }
+  40%  { filter: hue-rotate(45deg) saturate(2.5); transform: translate(-5px, -1px) skewX(1deg); }
+  48%  { filter: hue-rotate(-45deg); transform: translate(2px, 2px); }
+  60%  { filter: contrast(1.9) brightness(1.4); transform: translate(-2px, -1px); }
+  72%  { filter: none; transform: translate(1px, 0); }
+  85%  { filter: contrast(1.3); transform: translate(-1px, 1px); }
+  100% { filter: none; transform: translate(0,0); }
+}
+@keyframes glitchFlicker {
+  0%, 100% { opacity: 0; }
+  20%, 60% { opacity: 1; }
+  40%, 80% { opacity: 0.3; }
+}
+
+/* ===== Mini-jeu /game : tir d'asteroides a l'infini ===== */
+
+.game-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: var(--bg);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+}
+.game-overlay.open { display: flex; }
+.game-topbar {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 8px;
+  flex-shrink: 0;
+}
+.game-score { font-size: 13px; letter-spacing: 0.08em; color: var(--violet-pale); font-weight: 600; }
+.game-lives { display: flex; gap: 3px; font-size: 13px; }
+.game-close {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+}
+.game-close:hover { color: var(--text); border-color: var(--violet-deep); }
+.game-canvas {
+  display: block;
+  width: 92%;
+  max-width: 400px;
+  height: auto;
+  aspect-ratio: 11 / 14;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  touch-action: none;
+  cursor: crosshair;
+}
+.game-hint { font-size: 11px; color: var(--text-dim); padding: 10px 16px 4px; text-align: center; }
+.game-controls { display: flex; gap: 14px; padding: 12px 16px 16px; }
+.game-btn {
+  width: 52px; height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  user-select: none;
+}
+.game-btn:active { background: var(--surface-2); border-color: var(--violet-deep); }
+.game-over, .game-upgrade {
+  position: absolute;
+  inset: 0;
+  z-index: 61;
+  background: rgba(0,0,0,0.78);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  text-align: center;
+  padding: 20px;
+}
+.game-over.open, .game-upgrade.open { display: flex; }
+.game-over-title, .game-upgrade-title {
+  font-size: 20px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--violet-pale), var(--violet));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.game-upgrade-sub { font-size: 12px; color: var(--text-dim); margin-top: -8px; }
+.game-over-score { font-size: 14px; color: var(--text-dim); }
+.game-over-actions { display: flex; gap: 10px; margin-top: 4px; }
+.game-over-btn {
+  padding: 10px 18px;
+  border-radius: 100px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.game-over-btn.primary {
+  background: linear-gradient(135deg, var(--violet), var(--violet-deep));
+  border: none;
+  color: white;
+}
+.game-upgrade-cards { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 280px; }
+.upgrade-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+.upgrade-card:hover { border-color: var(--violet); background: var(--surface-2); transform: translateY(-1px); }
+.upgrade-icon { font-size: 22px; flex-shrink: 0; }
+.upgrade-label { font-size: 13px; font-weight: 600; color: var(--text); }
+.upgrade-desc { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
