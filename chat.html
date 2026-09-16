@@ -5,24 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gen IA - Chat</title>
   <link rel="stylesheet" href="style.css">
-  <style>
-    .typing {
-      align-self: flex-start;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      padding: 12px 16px;
-    }
-    .typing span {
-      width: 6px; height: 6px;
-      border-radius: 50%;
-      background: var(--violet);
-      animation: typingBlink 1.2s infinite;
-    }
-    .typing span:nth-child(2) { animation-delay: 0.2s; }
-    .typing span:nth-child(3) { animation-delay: 0.4s; }
-    @keyframes typingBlink { 0%, 80%, 100% { opacity: 0.2; } 40% { opacity: 1; } }
-  </style>
 </head>
 <body>
 
@@ -31,19 +13,52 @@
     <header>
       <a href="index.html" class="back">←</a>
 
-      <div>
+      <div class="header-titles">
         <h2>Gen IA</h2>
         <span>En ligne</span>
       </div>
-    </header>
 
-    <main id="messages" class="messages">
-
-      <div class="message ai">
-        Salut 👋 Je suis Gen ! Comment puis-je t'aider ?
+      <div class="header-actions">
+        <button class="theme-btn" id="themeBtn" title="Couleur">
+          <span class="theme-dot" id="themeDot"></span>
+        </button>
+        <button class="menu-btn" id="menuBtn" title="Options">☰</button>
       </div>
 
-    </main>
+      <div class="theme-panel" id="themePanel"></div>
+
+      <div class="menu-panel" id="menuPanel">
+        <div class="menu-label">Mode</div>
+        <button class="menu-item active" id="modeDefault">
+          <span class="menu-icon">💬</span> Normal <span class="menu-check">✓</span>
+        </button>
+        <button class="menu-item" id="modeMath">
+          <span class="menu-icon">∑</span> Maths <span class="menu-check">✓</span>
+        </button>
+        <button class="menu-item" id="modePhilo">
+          <span class="menu-icon">∞</span> Philosophie <span class="menu-check">✓</span>
+        </button>
+        <div class="menu-divider"></div>
+        <div class="menu-label">Outils</div>
+        <button class="menu-item" id="btnDictate">
+          <span class="menu-icon">🎙</span> Dicter un message
+        </button>
+        <button class="menu-item active" id="btnSpeak">
+          <span class="menu-icon">🔊</span><span class="menu-text"> Lire les réponses</span> <span class="menu-check">✓</span>
+        </button>
+        <button class="menu-item" id="btnImage">
+          <span class="menu-icon">✦</span> Générer une image
+        </button>
+        <div class="menu-divider"></div>
+        <div class="menu-label">Conversations</div>
+        <button class="menu-item" id="newConvBtn">
+          <span class="menu-icon">＋</span> Nouvelle conversation
+        </button>
+        <div class="history-list" id="historyList"></div>
+      </div>
+    </header>
+
+    <main id="messages" class="messages"></main>
 
     <form class="input-area" id="chatForm">
       <input
@@ -57,90 +72,597 @@
 
   </div>
 
+  <!-- Mini-jeu /game -->
+  <div class="game-overlay" id="gameOverlay">
+    <div class="game-topbar">
+      <div class="game-score" id="gameScore">SCORE 0</div>
+      <div class="game-lives" id="gameLives"></div>
+      <button class="game-close" id="gameClose" title="Retour au chat">✕</button>
+    </div>
+    <canvas class="game-canvas" id="gameCanvas" width="330" height="420"></canvas>
+    <div class="game-hint">Glisse ou touche pour te déplacer • tir automatique</div>
+    <div class="game-controls">
+      <button class="game-btn" id="gameLeft">◀</button>
+      <button class="game-btn" id="gameRight">▶</button>
+    </div>
+    <div class="game-over" id="gameOver">
+      <div class="game-over-title">Vaisseau détruit</div>
+      <div class="game-over-score" id="gameOverScore">Score : 0</div>
+      <div class="game-over-actions">
+        <button class="game-over-btn" id="gameQuit">Retour au chat</button>
+        <button class="game-over-btn primary" id="gameRetry">Rejouer</button>
+      </div>
+    </div>
+    <div class="game-upgrade" id="gameUpgrade">
+      <div class="game-upgrade-title">Palier atteint !</div>
+      <div class="game-upgrade-sub">Choisis une amélioration</div>
+      <div class="game-upgrade-cards" id="gameUpgradeCards"></div>
+    </div>
+  </div>
+
 <script>
-const form = document.getElementById("chatForm");
-const input = document.getElementById("userInput");
-const messages = document.getElementById("messages");
+(function() {
+  const API_URL = "/api/chat";
 
-// Le site est servi par le meme serveur que l'API (gen-server), donc on
-// appelle une URL relative - pas besoin de connaitre l'URL complete.
-const API_URL = "/api/chat";
+  const THEMES = {
+    violet: { label: 'Violet', swatch: '#b45cff', checkColor: '#000',
+      bg: '#07030d', bgGlow: '#1a0d2c', surface: '#0f0817', surface2: '#150c22', border: '#2a1a3d',
+      accent: '#b45cff', accentDeep: '#7a2cff', accentPale: '#d7a6ff', accentRgb: '180, 92, 255',
+      coreLight: '#f0d9ff', coreDark: '#4d0b7a', userBubble: '#29103c', text: '#efe5f5', textDim: '#8e7a9f' },
+    vert: { label: 'Vert', swatch: '#22c55e', checkColor: '#000',
+      bg: '#040d06', bgGlow: '#0e2414', surface: '#0a170c', surface2: '#0f1f12', border: '#1d3322',
+      accent: '#4ade80', accentDeep: '#16a34a', accentPale: '#bbf7d0', accentRgb: '74, 222, 128',
+      coreLight: '#e3fce9', coreDark: '#0b4023', userBubble: '#123320', text: '#e9f7ec', textDim: '#7fa98c' },
+    noir: { label: 'Noir', swatch: '#000000', checkColor: '#fff',
+      bg: '#000000', bgGlow: '#161616', surface: '#0d0d0d', surface2: '#171717', border: '#2c2c2c',
+      accent: '#e5e5e5', accentDeep: '#9a9a9a', accentPale: '#ffffff', accentRgb: '229, 229, 229',
+      coreLight: '#ffffff', coreDark: '#1a1a1a', userBubble: '#1f1f1f', text: '#f2f2f2', textDim: '#8a8a8a' },
+    gris: { label: 'Gris', swatch: '#a1a1aa', checkColor: '#000',
+      bg: '#0c0c0e', bgGlow: '#1f1f24', surface: '#161619', surface2: '#1e1e22', border: '#333338',
+      accent: '#a1a1aa', accentDeep: '#71717a', accentPale: '#d4d4d8', accentRgb: '161, 161, 170',
+      coreLight: '#e4e4e7', coreDark: '#3f3f46', userBubble: '#26262b', text: '#eaeaec', textDim: '#8b8b91' },
+    rouge: { label: 'Rouge', swatch: '#ef4444', checkColor: '#fff',
+      bg: '#0d0304', bgGlow: '#2b0d0f', surface: '#170809', surface2: '#210c0e', border: '#3d1a1c',
+      accent: '#ff5c5c', accentDeep: '#dc2626', accentPale: '#ffb3b3', accentRgb: '255, 92, 92',
+      coreLight: '#ffd9d9', coreDark: '#5c0d0d', userBubble: '#3d1216', text: '#f7e8e8', textDim: '#a97f7f' },
+    blanc: { label: 'Blanc', swatch: '#ffffff', checkColor: '#000',
+      bg: '#f4f3f6', bgGlow: '#ffffff', surface: '#ffffff', surface2: '#ece8f2', border: '#ddd6e3',
+      accent: '#111111', accentDeep: '#000000', accentPale: '#2b2b2b', accentRgb: '17, 17, 17',
+      coreLight: '#5a5a5a', coreDark: '#000000', userBubble: '#e6e2ee', text: '#1a1a1a', textDim: '#8f849e' }
+  };
 
-let history = [
-  { text: "Salut 👋 Je suis Gen ! Comment puis-je t'aider ?", user: false }
-];
+  const root = document.documentElement;
+  const messagesEl = document.getElementById('messages');
+  const form = document.getElementById('chatForm');
+  const input = document.getElementById('userInput');
+  const menuBtn = document.getElementById('menuBtn');
+  const menuPanel = document.getElementById('menuPanel');
+  const themeBtn = document.getElementById('themeBtn');
+  const themePanel = document.getElementById('themePanel');
+  const themeDot = document.getElementById('themeDot');
+  const modeDefault = document.getElementById('modeDefault');
+  const modeMath = document.getElementById('modeMath');
+  const modePhilo = document.getElementById('modePhilo');
+  const btnDictate = document.getElementById('btnDictate');
+  const btnSpeak = document.getElementById('btnSpeak');
+  const btnImage = document.getElementById('btnImage');
+  const newConvBtn = document.getElementById('newConvBtn');
+  const historyList = document.getElementById('historyList');
 
-function addMessage(text, role) {
-  const el = document.createElement("div");
-  el.className = "message " + role;
-  el.textContent = text;
-  messages.appendChild(el);
-  messages.scrollTop = messages.scrollHeight;
-  return el;
-}
+  let mode = 'default';
+  let thinking = false;
+  let speakEnabled = true;
+  let currentTheme = localStorage.getItem('genTheme') || 'violet';
 
-function showTyping() {
-  const el = document.createElement("div");
-  el.className = "message typing";
-  el.id = "typingIndicator";
-  el.innerHTML = "<span></span><span></span><span></span>";
-  messages.appendChild(el);
-  messages.scrollTop = messages.scrollHeight;
-}
+  const GREETING = { text: "Salut 👋 Je suis Gen ! Comment puis-je t'aider ?", user: false };
+  let messages = loadJSON('genActiveConversation', [GREETING]);
+  let conversations = loadJSON('genConversations', []);
 
-function hideTyping() {
-  const el = document.getElementById("typingIndicator");
-  if (el) el.remove();
-}
-
-// Code d'acces simple : evite que n'importe qui tombant sur l'URL publique
-// utilise ton budget API. Doit correspondre a GEN_APP_SECRET du serveur.
-function getAccessCode() {
-  let code = localStorage.getItem('genAccessCode');
-  if (!code) {
-    code = window.prompt("Code d'accès à Gen :");
-    if (code) localStorage.setItem('genAccessCode', code);
+  function loadJSON(key, fallback) {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : fallback;
+    } catch (e) { return fallback; }
   }
-  return code || '';
-}
+  function saveActive() {
+    try { localStorage.setItem('genActiveConversation', JSON.stringify(messages)); } catch (e) {}
+  }
+  function saveConversations() {
+    try { localStorage.setItem('genConversations', JSON.stringify(conversations)); } catch (e) {}
+  }
 
-form.addEventListener("submit", async function(e){
-  e.preventDefault();
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
 
-  const text = input.value.trim();
-  if (text === "") return;
+  function renderMessages() {
+    messagesEl.innerHTML = messages.map(m => `
+      <div class="message ${m.user ? 'user' : 'ai'}">${escapeHtml(m.text)}</div>
+    `).join('') + (thinking ? `
+      <div class="typing"><span></span><span></span><span></span></div>
+    ` : '');
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+    saveActive();
+  }
 
-  addMessage(text, "user");
-  history.push({ text, user: true });
-  input.value = "";
-  showTyping();
-
-  try {
-    const response = await fetch(API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-gen-secret": getAccessCode()
-      },
-      body: JSON.stringify({ messages: history.slice(-20), mode: "default" })
-    });
-
-    if (response.status === 401) {
-      localStorage.removeItem('genAccessCode');
-      throw new Error("Code d'accès incorrect. Recharge la page pour réessayer.");
+  function getAccessCode() {
+    let code = localStorage.getItem('genAccessCode');
+    if (!code) {
+      code = window.prompt("Code d'accès à Gen :");
+      if (code) localStorage.setItem('genAccessCode', code);
     }
-
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || "Erreur serveur");
-
-    hideTyping();
-    addMessage(data.reply, "ai");
-    history.push({ text: data.reply, user: false });
-  } catch (err) {
-    hideTyping();
-    addMessage("Je n'arrive pas à joindre mon cerveau IA (" + err.message + ")", "ai");
+    return code || '';
   }
-});
+
+  function speak(text) {
+    if (!speakEnabled || !('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = 'fr-FR';
+    window.speechSynthesis.speak(utter);
+  }
+
+  async function sendToGen(text) {
+    const cmd = text.trim().toLowerCase();
+    if (cmd === '/hack') { triggerGlitch(resetConversation); return; }
+    if (cmd === '/game') { triggerGlitch(openGame); return; }
+
+    messages.push({ text, user: true });
+    thinking = true;
+    renderMessages();
+
+    try {
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-gen-secret": getAccessCode() },
+        body: JSON.stringify({ messages: messages.slice(-20), mode })
+      });
+      if (response.status === 401) {
+        localStorage.removeItem('genAccessCode');
+        throw new Error("Code d'accès incorrect. Recharge la page.");
+      }
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Erreur serveur");
+      thinking = false;
+      messages.push({ text: data.reply, user: false });
+      renderMessages();
+      speak(data.reply);
+    } catch (err) {
+      thinking = false;
+      messages.push({ text: "Je n'arrive pas à joindre mon cerveau IA (" + err.message + ")", user: false });
+      renderMessages();
+    }
+  }
+
+  function resetConversation() {
+    messages = [GREETING];
+    thinking = false;
+    renderMessages();
+  }
+
+  function triggerGlitch(callback) {
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    document.body.classList.add('glitching');
+    setTimeout(() => {
+      document.body.classList.remove('glitching');
+      callback();
+    }, 450);
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const text = input.value.trim();
+    if (text && !thinking) {
+      input.value = '';
+      sendToGen(text);
+    }
+  });
+
+  // ===== Menu =====
+  function closeMenu() { menuPanel.classList.remove('open'); menuBtn.classList.remove('open'); }
+  menuBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    closeThemePanel();
+    menuPanel.classList.toggle('open');
+    menuBtn.classList.toggle('open');
+  });
+  document.addEventListener('click', (e) => {
+    if (!menuPanel.contains(e.target) && e.target !== menuBtn) closeMenu();
+    if (!themePanel.contains(e.target) && !themeBtn.contains(e.target)) closeThemePanel();
+  });
+
+  function setMode(newMode) {
+    mode = newMode;
+    modeDefault.classList.toggle('active', mode === 'default');
+    modeMath.classList.toggle('active', mode === 'math');
+    modePhilo.classList.toggle('active', mode === 'philosophy');
+    closeMenu();
+  }
+  modeDefault.addEventListener('click', () => setMode('default'));
+  modeMath.addEventListener('click', () => setMode('math'));
+  modePhilo.addEventListener('click', () => setMode('philosophy'));
+
+  btnSpeak.addEventListener('click', () => {
+    speakEnabled = !speakEnabled;
+    btnSpeak.classList.toggle('active', speakEnabled);
+    btnSpeak.querySelector('.menu-icon').textContent = speakEnabled ? '🔊' : '🔇';
+    btnSpeak.querySelector('.menu-text').textContent = speakEnabled ? ' Lire les réponses' : ' Réponses silencieuses';
+    if (!speakEnabled && 'speechSynthesis' in window) window.speechSynthesis.cancel();
+    closeMenu();
+  });
+
+  btnImage.addEventListener('click', () => {
+    closeMenu();
+    messages.push({ text: "La génération d'images n'est pas encore branchée — ce sera une prochaine étape.", user: false });
+    renderMessages();
+  });
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (SpeechRecognition) {
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'fr-FR';
+    recognition.interimResults = false;
+    btnDictate.addEventListener('click', () => {
+      closeMenu();
+      input.placeholder = '🎙 Je t\'écoute…';
+      recognition.start();
+    });
+    recognition.onresult = (e) => { input.value = e.results[0][0].transcript; };
+    recognition.onend = () => { input.placeholder = 'Écris ton message...'; };
+    recognition.onerror = () => { input.placeholder = 'Écris ton message...'; };
+  } else {
+    btnDictate.addEventListener('click', () => {
+      closeMenu();
+      messages.push({ text: "Ton navigateur ne supporte pas la reconnaissance vocale (essaie sur Chrome).", user: false });
+      renderMessages();
+    });
+  }
+
+  // ===== Conversations (localStorage) =====
+  function archiveCurrentConversation() {
+    const hasUserMsg = messages.some(m => m.user);
+    if (!hasUserMsg) return;
+    const firstUserMsg = messages.find(m => m.user);
+    const label = firstUserMsg.text.length > 32 ? firstUserMsg.text.slice(0, 32) + '…' : firstUserMsg.text;
+    conversations.unshift({
+      id: 'c' + Date.now() + Math.random().toString(36).slice(2, 6),
+      label, messages: JSON.parse(JSON.stringify(messages))
+    });
+    saveConversations();
+  }
+  function startNewConversation() {
+    archiveCurrentConversation();
+    messages = [GREETING];
+    renderMessages();
+    renderHistoryMenu();
+    closeMenu();
+  }
+  function openConversation(id) {
+    const idx = conversations.findIndex(c => c.id === id);
+    if (idx === -1) return;
+    archiveCurrentConversation();
+    messages = conversations[idx].messages;
+    conversations.splice(idx, 1);
+    saveConversations();
+    renderMessages();
+    renderHistoryMenu();
+    closeMenu();
+  }
+  function deleteConversation(id, e) {
+    e.stopPropagation();
+    conversations = conversations.filter(c => c.id !== id);
+    saveConversations();
+    renderHistoryMenu();
+  }
+  function renderHistoryMenu() {
+    if (!conversations.length) {
+      historyList.innerHTML = '<div class="menu-empty">Aucune conversation archivée</div>';
+      return;
+    }
+    historyList.innerHTML = conversations.map(c => `
+      <button class="menu-item history-item" data-id="${c.id}">
+        <span class="menu-icon">💬</span>
+        <span class="menu-text-trunc">${escapeHtml(c.label)}</span>
+        <span class="history-del" data-del="${c.id}" title="Supprimer">✕</span>
+      </button>
+    `).join('');
+    historyList.querySelectorAll('.history-item').forEach(btn => {
+      btn.addEventListener('click', () => openConversation(btn.dataset.id));
+    });
+    historyList.querySelectorAll('[data-del]').forEach(el => {
+      el.addEventListener('click', (e) => deleteConversation(el.dataset.del, e));
+    });
+  }
+  newConvBtn.addEventListener('click', startNewConversation);
+
+  // ===== Themes =====
+  function closeThemePanel() { themePanel.classList.remove('open'); }
+  themeBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    closeMenu();
+    themePanel.classList.toggle('open');
+  });
+  function applyTheme(name, persist) {
+    const t = THEMES[name];
+    if (!t) return;
+    currentTheme = name;
+    root.style.setProperty('--bg', t.bg);
+    root.style.setProperty('--bg-glow', t.bgGlow);
+    root.style.setProperty('--surface', t.surface);
+    root.style.setProperty('--surface-2', t.surface2);
+    root.style.setProperty('--border', t.border);
+    root.style.setProperty('--violet', t.accent);
+    root.style.setProperty('--violet-deep', t.accentDeep);
+    root.style.setProperty('--violet-pale', t.accentPale);
+    root.style.setProperty('--accent-rgb', t.accentRgb);
+    root.style.setProperty('--core-light', t.coreLight);
+    root.style.setProperty('--core-dark', t.coreDark);
+    root.style.setProperty('--user-bubble', t.userBubble);
+    root.style.setProperty('--text', t.text);
+    root.style.setProperty('--text-dim', t.textDim);
+    themeDot.style.background = t.accent;
+    themeDot.style.boxShadow = `0 0 6px ${t.accent}`;
+    themePanel.querySelectorAll('.theme-swatch').forEach(sw => {
+      sw.classList.toggle('selected', sw.dataset.theme === name);
+    });
+    if (persist !== false) { try { localStorage.setItem('genTheme', name); } catch (e) {} }
+  }
+  themePanel.innerHTML = Object.entries(THEMES).map(([key, t]) => `
+    <button class="theme-swatch${key === currentTheme ? ' selected' : ''}" data-theme="${key}" title="${t.label}" style="background:${t.swatch};">
+      <span class="check" style="color:${t.checkColor}">✓</span>
+    </button>
+  `).join('');
+  themePanel.querySelectorAll('.theme-swatch').forEach(sw => {
+    sw.addEventListener('click', () => { applyTheme(sw.dataset.theme); closeThemePanel(); });
+  });
+  applyTheme(currentTheme, false);
+
+  // ===== Mini-jeu /game =====
+  const gameOverlay = document.getElementById('gameOverlay');
+  const gameCanvas = document.getElementById('gameCanvas');
+  const gameCtx = gameCanvas.getContext('2d');
+  const gameScoreEl = document.getElementById('gameScore');
+  const gameLivesEl = document.getElementById('gameLives');
+  const gameCloseBtn = document.getElementById('gameClose');
+  const gameLeftBtn = document.getElementById('gameLeft');
+  const gameRightBtn = document.getElementById('gameRight');
+  const gameOverEl = document.getElementById('gameOver');
+  const gameOverScoreEl = document.getElementById('gameOverScore');
+  const gameQuitBtn = document.getElementById('gameQuit');
+  const gameRetryBtn = document.getElementById('gameRetry');
+  const gameUpgradeEl = document.getElementById('gameUpgrade');
+  const gameUpgradeCardsEl = document.getElementById('gameUpgradeCards');
+
+  const GW = gameCanvas.width, GH = gameCanvas.height;
+  const MAX_LIVES = 6;
+  let gameRunning = false, gameRAF = null;
+  let ship, bullets, asteroids, score, spawnTimer, elapsed, moveDir, lastUpgradeScore;
+  let gameLastFireAt = 0, gameLastTime = 0;
+
+  function themeColor(varName) {
+    return getComputedStyle(root).getPropertyValue(varName).trim() || '#b45cff';
+  }
+  function updateLivesUI() {
+    gameLivesEl.innerHTML = Array.from({ length: ship.lives }).map(() => '<span>❤️</span>').join('');
+  }
+  function resetGameState() {
+    ship = { x: GW / 2, y: GH - 34, w: 22, h: 22, speed: 4.5, lives: 3, invincibleUntil: 0, fireInterval: 260, bulletCount: 1, bulletPower: 1 };
+    bullets = []; asteroids = []; score = 0; spawnTimer = 0; elapsed = 0; moveDir = 0; lastUpgradeScore = 0;
+    gameScoreEl.textContent = 'SCORE 0';
+    gameOverEl.classList.remove('open');
+    gameUpgradeEl.classList.remove('open');
+    updateLivesUI();
+  }
+  function openGame() {
+    resetGameState();
+    gameOverlay.classList.add('open');
+    gameRunning = true;
+    window.addEventListener('keydown', onGameKeyDown);
+    window.addEventListener('keyup', onGameKeyUp);
+    gameLastFireAt = 0;
+    gameLastTime = performance.now();
+    gameRAF = requestAnimationFrame(gameLoop);
+  }
+  function closeGame() {
+    gameRunning = false;
+    if (gameRAF) cancelAnimationFrame(gameRAF);
+    window.removeEventListener('keydown', onGameKeyDown);
+    window.removeEventListener('keyup', onGameKeyUp);
+    gameOverlay.classList.remove('open');
+    gameOverEl.classList.remove('open');
+    gameUpgradeEl.classList.remove('open');
+  }
+  function onGameKeyDown(e) {
+    if (e.key === 'ArrowLeft' || e.key === 'a') moveDir = -1;
+    if (e.key === 'ArrowRight' || e.key === 'd') moveDir = 1;
+    if (e.key === 'Escape') closeGame();
+  }
+  function onGameKeyUp(e) {
+    if ((e.key === 'ArrowLeft' || e.key === 'a') && moveDir === -1) moveDir = 0;
+    if ((e.key === 'ArrowRight' || e.key === 'd') && moveDir === 1) moveDir = 0;
+  }
+  gameLeftBtn.addEventListener('pointerdown', () => moveDir = -1);
+  gameRightBtn.addEventListener('pointerdown', () => moveDir = 1);
+  ['pointerup', 'pointerleave'].forEach(evt => {
+    gameLeftBtn.addEventListener(evt, () => { if (moveDir === -1) moveDir = 0; });
+    gameRightBtn.addEventListener(evt, () => { if (moveDir === 1) moveDir = 0; });
+  });
+  function canvasPointerX(e) {
+    const rect = gameCanvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    return (clientX - rect.left) / rect.width * GW;
+  }
+  let dragging = false;
+  gameCanvas.addEventListener('pointerdown', (e) => { dragging = true; ship.x = canvasPointerX(e); });
+  gameCanvas.addEventListener('pointermove', (e) => { if (dragging) ship.x = canvasPointerX(e); });
+  window.addEventListener('pointerup', () => dragging = false);
+  gameCloseBtn.addEventListener('click', closeGame);
+  gameQuitBtn.addEventListener('click', closeGame);
+  gameRetryBtn.addEventListener('click', () => {
+    resetGameState();
+    gameRunning = true;
+    gameLastTime = performance.now();
+    gameRAF = requestAnimationFrame(gameLoop);
+  });
+
+  const UPGRADE_POOL = [
+    { icon: '🔥', label: 'Tir rapide', desc: 'Cadence de tir augmentée', apply: () => { ship.fireInterval = Math.max(90, ship.fireInterval - 45); } },
+    { icon: '✦', label: 'Tir double', desc: 'Deux tirs simultanés', apply: () => { ship.bulletCount = Math.min(4, ship.bulletCount + 1); } },
+    { icon: '🛡️', label: 'Vie supplémentaire', desc: '+1 vie (max ' + MAX_LIVES + ')', apply: () => { ship.lives = Math.min(MAX_LIVES, ship.lives + 1); updateLivesUI(); } },
+    { icon: '⚡', label: 'Vitesse+', desc: 'Vaisseau plus rapide', apply: () => { ship.speed += 1.1; } },
+    { icon: '🎯', label: 'Tir puissant', desc: 'Tirs plus gros, touchent plus large', apply: () => { ship.bulletPower += 0.8; } }
+  ];
+  function pickRandomUpgrades(n) {
+    const pool = [...UPGRADE_POOL], picks = [];
+    while (picks.length < n && pool.length) picks.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+    return picks;
+  }
+  function showUpgradeChoice() {
+    gameRunning = false;
+    if (gameRAF) cancelAnimationFrame(gameRAF);
+    const choices = pickRandomUpgrades(3);
+    gameUpgradeCardsEl.innerHTML = choices.map((u, i) => `
+      <button class="upgrade-card" data-idx="${i}">
+        <span class="upgrade-icon">${u.icon}</span>
+        <span><div class="upgrade-label">${u.label}</div><div class="upgrade-desc">${u.desc}</div></span>
+      </button>
+    `).join('');
+    gameUpgradeCardsEl.querySelectorAll('.upgrade-card').forEach(btn => {
+      btn.addEventListener('click', () => {
+        choices[Number(btn.dataset.idx)].apply();
+        gameUpgradeEl.classList.remove('open');
+        gameRunning = true;
+        gameLastTime = performance.now();
+        gameRAF = requestAnimationFrame(gameLoop);
+      });
+    });
+    gameUpgradeEl.classList.add('open');
+  }
+  function spawnAsteroid() {
+    const r = 10 + Math.random() * 16;
+    const spikes = 9 + Math.floor(Math.random() * 3);
+    const vertexFactors = Array.from({ length: spikes }, () => 0.72 + Math.random() * 0.34);
+    const craters = Array.from({ length: 1 + Math.floor(Math.random() * 3) }, () => ({
+      angle: Math.random() * Math.PI * 2, dist: Math.random() * r * 0.5, r: r * (0.12 + Math.random() * 0.14)
+    }));
+    asteroids.push({
+      x: r + Math.random() * (GW - r * 2), y: -r, r,
+      speed: 1.2 + Math.random() * 1.3 + Math.min(elapsed / 20000, 2.5),
+      spin: (Math.random() - 0.5) * 0.045, angle: Math.random() * Math.PI * 2,
+      vertexFactors, craters
+    });
+  }
+  function gameOverFn() {
+    gameRunning = false;
+    if (gameRAF) cancelAnimationFrame(gameRAF);
+    gameOverScoreEl.textContent = 'Score : ' + score;
+    gameOverEl.classList.add('open');
+  }
+  function gameLoop(now) {
+    if (!gameRunning) return;
+    const dt = Math.min(now - gameLastTime, 40);
+    gameLastTime = now;
+    elapsed += dt;
+    ship.x += moveDir * ship.speed * (dt / 16.67);
+    ship.x = Math.max(ship.w, Math.min(GW - ship.w, ship.x));
+    if (now - gameLastFireAt > ship.fireInterval) {
+      const n = ship.bulletCount;
+      for (let i = 0; i < n; i++) {
+        const offset = (i - (n - 1) / 2) * 9;
+        bullets.push({ x: ship.x + offset, y: ship.y - ship.h, power: ship.bulletPower });
+      }
+      gameLastFireAt = now;
+    }
+    spawnTimer += dt;
+    const spawnRate = Math.max(340, 900 - elapsed / 40);
+    if (spawnTimer > spawnRate) { spawnTimer = 0; spawnAsteroid(); }
+    bullets.forEach(b => b.y -= 7 * (dt / 16.67));
+    bullets = bullets.filter(b => b.y > -10);
+    asteroids.forEach(a => { a.y += a.speed * (dt / 16.67); a.angle += a.spin; });
+    for (let ai = asteroids.length - 1; ai >= 0; ai--) {
+      const a = asteroids[ai];
+      for (let bi = bullets.length - 1; bi >= 0; bi--) {
+        const b = bullets[bi];
+        const dx = a.x - b.x, dy = a.y - b.y;
+        if (Math.sqrt(dx * dx + dy * dy) < a.r + (b.power - 1) * 4) {
+          asteroids.splice(ai, 1); bullets.splice(bi, 1);
+          score += 10;
+          gameScoreEl.textContent = 'SCORE ' + score;
+          if (score >= lastUpgradeScore + 100) { lastUpgradeScore += 100; showUpgradeChoice(); return; }
+          break;
+        }
+      }
+    }
+    asteroids = asteroids.filter(a => a.y - a.r < GH + 20);
+    for (let ai = asteroids.length - 1; ai >= 0; ai--) {
+      const a = asteroids[ai];
+      const dx = a.x - ship.x, dy = a.y - ship.y;
+      if (Math.sqrt(dx * dx + dy * dy) < a.r + ship.w * 0.55) {
+        asteroids.splice(ai, 1);
+        if (now >= ship.invincibleUntil) {
+          ship.lives -= 1;
+          ship.invincibleUntil = now + 1400;
+          updateLivesUI();
+          if (ship.lives <= 0) { gameOverFn(); return; }
+        }
+      }
+    }
+    drawGame();
+    gameRAF = requestAnimationFrame(gameLoop);
+  }
+  function drawGame() {
+    const accent = themeColor('--violet'), accentPale = themeColor('--violet-pale'), bg = themeColor('--surface');
+    gameCtx.fillStyle = bg;
+    gameCtx.fillRect(0, 0, GW, GH);
+    const isInvincible = performance.now() < ship.invincibleUntil;
+    gameCtx.globalAlpha = isInvincible ? (Math.floor(performance.now() / 90) % 2 === 0 ? 1 : 0.25) : 1;
+    gameCtx.fillStyle = accentPale;
+    gameCtx.beginPath();
+    gameCtx.moveTo(ship.x, ship.y - ship.h);
+    gameCtx.lineTo(ship.x - ship.w * 0.6, ship.y + ship.h * 0.5);
+    gameCtx.lineTo(ship.x + ship.w * 0.6, ship.y + ship.h * 0.5);
+    gameCtx.closePath(); gameCtx.fill();
+    gameCtx.globalAlpha = 1;
+    gameCtx.fillStyle = accent;
+    bullets.forEach(b => {
+      gameCtx.beginPath();
+      gameCtx.arc(b.x, b.y, 2.2 + (b.power - 1) * 1.3, 0, Math.PI * 2);
+      gameCtx.fill();
+    });
+    asteroids.forEach(a => {
+      const grad = gameCtx.createRadialGradient(a.x - a.r * 0.35, a.y - a.r * 0.35, a.r * 0.15, a.x, a.y, a.r * 1.05);
+      grad.addColorStop(0, accentPale);
+      grad.addColorStop(0.55, accent);
+      grad.addColorStop(1, themeColor('--violet-deep'));
+      gameCtx.beginPath();
+      const vf = a.vertexFactors, spikes = vf.length;
+      for (let i = 0; i <= spikes; i++) {
+        const ang = a.angle + (i / spikes) * Math.PI * 2;
+        const rad = a.r * vf[i % spikes];
+        const px = a.x + Math.cos(ang) * rad, py = a.y + Math.sin(ang) * rad;
+        if (i === 0) gameCtx.moveTo(px, py); else gameCtx.lineTo(px, py);
+      }
+      gameCtx.closePath();
+      gameCtx.fillStyle = grad; gameCtx.fill();
+      gameCtx.strokeStyle = themeColor('--border'); gameCtx.lineWidth = 1.2; gameCtx.stroke();
+      gameCtx.fillStyle = 'rgba(0,0,0,0.22)';
+      a.craters.forEach(c => {
+        const cx = a.x + Math.cos(a.angle + c.angle) * c.dist, cy = a.y + Math.sin(a.angle + c.angle) * c.dist;
+        gameCtx.beginPath(); gameCtx.arc(cx, cy, c.r, 0, Math.PI * 2); gameCtx.fill();
+      });
+      gameCtx.fillStyle = 'rgba(255,255,255,0.28)';
+      gameCtx.beginPath();
+      gameCtx.arc(a.x - a.r * 0.35, a.y - a.r * 0.35, a.r * 0.18, 0, Math.PI * 2);
+      gameCtx.fill();
+    });
+  }
+
+  // ===== Init =====
+  renderMessages();
+  renderHistoryMenu();
+})();
 </script>
 
 </body>
