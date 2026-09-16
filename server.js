@@ -12,9 +12,9 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: "1mb" }));
 
-// Sert le site web (public/index.html) sur l'URL racine du serveur.
-// Une seule URL de deploiement = le site ET l'API.
-app.use(express.static(path.join(__dirname, "public")));
+// Sert le site web directement depuis la racine du depot (index.html,
+// chat.html, style.css) - pas de sous-dossier "public" necessaire.
+app.use(express.static(__dirname));
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEN_APP_SECRET = process.env.GEN_APP_SECRET;
