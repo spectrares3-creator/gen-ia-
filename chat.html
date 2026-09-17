@@ -131,6 +131,15 @@
       coreLight: '#5a5a5a', coreDark: '#000000', userBubble: '#e6e2ee', text: '#1a1a1a', textDim: '#8f849e' }
   };
 
+  // Theme secret, debloque uniquement via la commande /golden (pas affiche
+  // dans le selecteur de couleur normal).
+  const SECRET_THEMES = {
+    golden: { label: 'Golden', swatch: '#e5b93a',
+      bg: '#0c0701', bgGlow: '#2a1c05', surface: '#171006', surface2: '#221808', border: '#4a3410',
+      accent: '#e5b93a', accentDeep: '#b8860b', accentPale: '#ffe38a', accentRgb: '229, 185, 58',
+      coreLight: '#fff3c4', coreDark: '#5c4308', userBubble: '#332309', text: '#faf1d9', textDim: '#a68f5c' }
+  };
+
   const root = document.documentElement;
   const messagesEl = document.getElementById('messages');
   const form = document.getElementById('chatForm');
@@ -150,6 +159,7 @@
   const historyList = document.getElementById('historyList');
 
   let mode = 'default';
+  let speaking = false;
   let thinking = false;
   let speakEnabled = true;
   let currentTheme = localStorage.getItem('genTheme') || 'violet';
@@ -180,8 +190,8 @@
   function renderMessages() {
     messagesEl.innerHTML = messages.map(m => `
       <div class="message ${m.user ? 'user' : 'ai'}">${escapeHtml(m.text)}</div>
-    `).join('') + (thinking ? `
-      <div class="typing"><span></span><span></span><span></span></div>
+    `).join('') + ((thinking || speaking) ? `
+      <div class="typing"><div class="typing-orb"></div></div>
     ` : '');
     messagesEl.scrollTop = messagesEl.scrollHeight;
     saveActive();
@@ -201,6 +211,9 @@
     window.speechSynthesis.cancel();
     const utter = new SpeechSynthesisUtterance(text);
     utter.lang = 'fr-FR';
+    utter.onstart = () => { speaking = true; renderMessages(); };
+    utter.onend = () => { speaking = false; renderMessages(); };
+    utter.onerror = () => { speaking = false; renderMessages(); };
     window.speechSynthesis.speak(utter);
   }
 
@@ -208,6 +221,8 @@
     const cmd = text.trim().toLowerCase();
     if (cmd === '/hack') { triggerGlitch(resetConversation); return; }
     if (cmd === '/game') { triggerGlitch(openGame); return; }
+    if (cmd === '/golden') { triggerGlitch(() => applyTheme('golden')); return; }
+    if (cmd === '/reset') { triggerGlitch(() => applyTheme('violet')); return; }
 
     messages.push({ text, user: true });
     thinking = true;
@@ -289,7 +304,11 @@
     btnSpeak.classList.toggle('active', speakEnabled);
     btnSpeak.querySelector('.menu-icon').textContent = speakEnabled ? '🔊' : '🔇';
     btnSpeak.querySelector('.menu-text').textContent = speakEnabled ? ' Lire les réponses' : ' Réponses silencieuses';
-    if (!speakEnabled && 'speechSynthesis' in window) window.speechSynthesis.cancel();
+    if (!speakEnabled && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      speaking = false;
+      renderMessages();
+    }
     closeMenu();
   });
 
@@ -385,7 +404,7 @@
     themePanel.classList.toggle('open');
   });
   function applyTheme(name, persist) {
-    const t = THEMES[name];
+    const t = THEMES[name] || SECRET_THEMES[name];
     if (!t) return;
     currentTheme = name;
     root.style.setProperty('--bg', t.bg);
