@@ -343,10 +343,18 @@
       micBtn.classList.remove('listening');
       input.placeholder = 'Écris ton message...';
     };
-    recognition.onerror = () => {
+    recognition.onerror = (e) => {
       listening = false;
       micBtn.classList.remove('listening');
       input.placeholder = 'Écris ton message...';
+      const reasons = {
+        'not-allowed': "Accès au micro refusé — vérifie les permissions du site.",
+        'no-speech': "Je n'ai rien entendu, réessaie.",
+        'audio-capture': "Aucun micro détecté sur cet appareil.",
+        'network': "Problème réseau pendant la reconnaissance vocale.",
+      };
+      messages.push({ text: reasons[e.error] || ("Erreur de dictée vocale : " + e.error), user: false });
+      renderMessages();
     };
   } else {
     function unsupportedDictation() {
