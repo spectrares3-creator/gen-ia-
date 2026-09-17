@@ -24,16 +24,143 @@
   <meta name="twitter:description" content="Discute avec Gen, une intelligence artificielle conversationnelle en francais, gratuite et disponible en ligne.">
 
   <link rel="stylesheet" href="style.css">
+
+  <style>
+    /* ===== Selecteur de couleur sur l'accueil (fixe en haut a droite) ===== */
+    .home-theme-btn {
+      position: fixed;
+      top: 18px; right: 18px;
+      z-index: 30;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-dim);
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      font-family: inherit;
+      padding: 6px 12px 6px 8px;
+      border-radius: 100px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .home-theme-btn:hover { border-color: var(--violet-deep); color: var(--text); }
+    .home-theme-dot {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: var(--violet);
+      box-shadow: 0 0 6px var(--violet);
+      flex-shrink: 0;
+    }
+    .home-theme-panel {
+      position: fixed;
+      top: 58px; right: 18px;
+      z-index: 30;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 10px;
+      display: none;
+      gap: 10px;
+      box-shadow: 0 12px 40px -8px rgba(0,0,0,0.6), 0 0 0 1px var(--border);
+    }
+    .home-theme-panel.open { display: flex; }
+    .home-theme-swatch {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.18);
+      cursor: pointer;
+      padding: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: transform 0.15s;
+    }
+    .home-theme-swatch:hover { transform: scale(1.12); }
+    .home-theme-swatch.selected { border-color: var(--text); }
+    .home-theme-swatch .check { font-size: 13px; opacity: 0; }
+    .home-theme-swatch.selected .check { opacity: 1; }
+
+    /* ===== Sphere HUD agrandie, avec davantage d'anneaux ===== */
+    .home-orb { width: 280px; height: 280px; position: relative; margin-bottom: 22px; }
+    .home-orb .core {
+      width: 130px; height: 130px;
+      margin: -65px 0 0 -65px;
+    }
+    .hud-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .hud-spin-1 { animation: spin1 9s linear infinite; transform-origin: 50% 50%; }
+    .hud-spin-2 { animation: spin2 13s linear infinite; transform-origin: 50% 50%; }
+    .hud-spin-3 { animation: spin1 17s linear infinite reverse; transform-origin: 50% 50%; }
+    .hud-spin-4 { animation: spin2 6s linear infinite; transform-origin: 50% 50%; }
+    .hud-static { animation: spin2 70s linear infinite; transform-origin: 50% 50%; }
+
+    /* ===== Indice secret qui apparait de temps en temps ===== */
+    .secret-hint {
+      position: absolute;
+      top: -6px; right: -6px;
+      background: var(--surface);
+      border: 1px solid var(--violet-deep);
+      color: var(--violet-pale);
+      font-size: 11px;
+      font-family: 'Courier New', monospace;
+      letter-spacing: 0.03em;
+      padding: 5px 10px;
+      border-radius: 100px;
+      cursor: default;
+      opacity: 0;
+      transform: scale(0.85);
+      pointer-events: none;
+      transition: opacity 0.4s, transform 0.4s;
+      box-shadow: 0 0 14px rgba(var(--accent-rgb), 0.35);
+      z-index: 5;
+    }
+    .secret-hint.show { opacity: 1; transform: scale(1); pointer-events: auto; }
+    .secret-hint-tooltip {
+      position: absolute;
+      top: 130%; right: 0;
+      width: 190px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-size: 11px;
+      font-family: inherit;
+      color: var(--text-dim);
+      opacity: 0;
+      transform: translateY(-4px);
+      transition: opacity 0.15s, transform 0.15s;
+      pointer-events: none;
+    }
+    .secret-hint:hover .secret-hint-tooltip { opacity: 1; transform: translateY(0); }
+  </style>
 </head>
 <body class="home">
+
+  <button class="home-theme-btn" id="homeThemeBtn" title="Couleur">
+    <span class="home-theme-dot" id="homeThemeDot"></span>Couleur
+  </button>
+  <div class="home-theme-panel" id="homeThemePanel"></div>
 
   <main class="home-container">
 
     <div class="home-orb">
-      <!-- Anneau exterieur fin, gradue comme un cadran -->
+      <!-- Anneaux exterieurs fins, gradues comme un cadran -->
       <svg class="hud-svg hud-static" viewBox="0 0 200 200">
+        <circle cx="100" cy="100" r="97" fill="none" stroke="#7a2cff" stroke-width="1" stroke-dasharray="1 5" opacity="0.4"/>
         <circle cx="100" cy="100" r="94" fill="none" stroke="#4a2f70" stroke-width="1" stroke-dasharray="1 6" opacity="0.6"/>
         <circle cx="100" cy="100" r="86" fill="none" stroke="#7a2cff" stroke-width="1.3" stroke-dasharray="8 5" opacity="0.35"/>
+      </svg>
+
+      <!-- Grand arc segmente qui tourne, effet "radar" -->
+      <svg class="hud-svg hud-spin-3" viewBox="0 0 200 200">
+        <defs>
+          <linearGradient id="hg3" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:#7a2cff;stop-opacity:0"/>
+            <stop offset="100%" style="stop-color:#9c5cff;stop-opacity:0.9"/>
+          </linearGradient>
+        </defs>
+        <circle cx="100" cy="100" r="80" fill="none" stroke="url(#hg3)" stroke-width="2"
+                stroke-dasharray="70 180" stroke-linecap="round"/>
       </svg>
 
       <!-- Arc segmente qui tourne, effet "radar" -->
@@ -55,6 +182,11 @@
         <circle cx="100" cy="46" r="2.5" fill="#b45cff"/>
       </svg>
 
+      <!-- Petit anneau tout interieur, tourne vite -->
+      <svg class="hud-svg hud-spin-4" viewBox="0 0 200 200">
+        <circle cx="100" cy="100" r="40" fill="none" stroke="#d7a6ff" stroke-width="1" stroke-dasharray="2 4" opacity="0.6"/>
+      </svg>
+
       <!-- Petits accents de "donnees" qui depassent, style HUD -->
       <svg class="hud-svg hud-static" viewBox="0 0 200 200">
         <g stroke="#9c5cff" stroke-width="1" opacity="0.65">
@@ -63,6 +195,7 @@
           <line x1="85" y1="187" x2="82" y2="200"/>
           <line x1="20" y1="137" x2="7" y2="143"/>
           <line x1="24" y1="56" x2="11" y2="49"/>
+          <line x1="176" y1="80" x2="192" y2="76"/>
         </g>
         <g fill="#d7a6ff">
           <circle cx="180" cy="34" r="1.8"/>
@@ -70,18 +203,17 @@
           <circle cx="82" cy="200" r="1.8"/>
           <circle cx="7" cy="143" r="1.8"/>
           <circle cx="11" cy="49" r="1.8"/>
+          <circle cx="192" cy="76" r="1.8"/>
         </g>
       </svg>
 
       <div class="core"></div>
-    </div>
 
-    <style>
-      .hud-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-      .hud-spin-1 { animation: spin1 9s linear infinite; transform-origin: 50% 50%; }
-      .hud-spin-2 { animation: spin2 13s linear infinite; transform-origin: 50% 50%; }
-      .hud-static { animation: spin2 55s linear infinite; transform-origin: 50% 50%; }
-    </style>
+      <div class="secret-hint" id="secretHint">
+        <span id="secretHintText">/game</span>
+        <div class="secret-hint-tooltip" id="secretHintTooltip">Lance un mini-jeu de tir d'astéroïdes dans le chat</div>
+      </div>
+    </div>
 
     <h1>Gen IA</h1>
 
@@ -93,6 +225,123 @@
       Parler à mon IA
     </a>
   </main>
+
+<script>
+(function() {
+  const THEMES = {
+    violet: { label: 'Violet', swatch: '#b45cff', checkColor: '#000',
+      bg: '#07030d', bgGlow: '#1a0d2c', surface: '#0f0817', surface2: '#150c22', border: '#2a1a3d',
+      accent: '#b45cff', accentDeep: '#7a2cff', accentPale: '#d7a6ff', accentRgb: '180, 92, 255',
+      coreLight: '#f0d9ff', coreDark: '#4d0b7a', userBubble: '#29103c', text: '#efe5f5', textDim: '#8e7a9f' },
+    vert: { label: 'Vert', swatch: '#22c55e', checkColor: '#000',
+      bg: '#040d06', bgGlow: '#0e2414', surface: '#0a170c', surface2: '#0f1f12', border: '#1d3322',
+      accent: '#4ade80', accentDeep: '#16a34a', accentPale: '#bbf7d0', accentRgb: '74, 222, 128',
+      coreLight: '#e3fce9', coreDark: '#0b4023', userBubble: '#123320', text: '#e9f7ec', textDim: '#7fa98c' },
+    noir: { label: 'Noir', swatch: '#000000', checkColor: '#fff',
+      bg: '#000000', bgGlow: '#161616', surface: '#0d0d0d', surface2: '#171717', border: '#2c2c2c',
+      accent: '#e5e5e5', accentDeep: '#9a9a9a', accentPale: '#ffffff', accentRgb: '229, 229, 229',
+      coreLight: '#ffffff', coreDark: '#1a1a1a', userBubble: '#1f1f1f', text: '#f2f2f2', textDim: '#8a8a8a' },
+    gris: { label: 'Gris', swatch: '#a1a1aa', checkColor: '#000',
+      bg: '#0c0c0e', bgGlow: '#1f1f24', surface: '#161619', surface2: '#1e1e22', border: '#333338',
+      accent: '#a1a1aa', accentDeep: '#71717a', accentPale: '#d4d4d8', accentRgb: '161, 161, 170',
+      coreLight: '#e4e4e7', coreDark: '#3f3f46', userBubble: '#26262b', text: '#eaeaec', textDim: '#8b8b91' },
+    rouge: { label: 'Rouge', swatch: '#ef4444', checkColor: '#fff',
+      bg: '#0d0304', bgGlow: '#2b0d0f', surface: '#170809', surface2: '#210c0e', border: '#3d1a1c',
+      accent: '#ff5c5c', accentDeep: '#dc2626', accentPale: '#ffb3b3', accentRgb: '255, 92, 92',
+      coreLight: '#ffd9d9', coreDark: '#5c0d0d', userBubble: '#3d1216', text: '#f7e8e8', textDim: '#a97f7f' },
+    blanc: { label: 'Blanc', swatch: '#ffffff', checkColor: '#000',
+      bg: '#f4f3f6', bgGlow: '#ffffff', surface: '#ffffff', surface2: '#ece8f2', border: '#ddd6e3',
+      accent: '#111111', accentDeep: '#000000', accentPale: '#2b2b2b', accentRgb: '17, 17, 17',
+      coreLight: '#5a5a5a', coreDark: '#000000', userBubble: '#e6e2ee', text: '#1a1a1a', textDim: '#8f849e' }
+  };
+  const SECRET_THEMES = {
+    golden: { label: 'Golden', swatch: '#e5b93a',
+      bg: '#0c0701', bgGlow: '#2a1c05', surface: '#171006', surface2: '#221808', border: '#4a3410',
+      accent: '#e5b93a', accentDeep: '#b8860b', accentPale: '#ffe38a', accentRgb: '229, 185, 58',
+      coreLight: '#fff3c4', coreDark: '#5c4308', userBubble: '#332309', text: '#faf1d9', textDim: '#a68f5c' }
+  };
+
+  const root = document.documentElement;
+  const themeBtn = document.getElementById('homeThemeBtn');
+  const themePanel = document.getElementById('homeThemePanel');
+  const themeDot = document.getElementById('homeThemeDot');
+  let currentTheme = localStorage.getItem('genTheme') || 'violet';
+
+  function applyTheme(name, persist) {
+    const t = THEMES[name] || SECRET_THEMES[name];
+    if (!t) return;
+    currentTheme = name;
+    root.style.setProperty('--bg', t.bg);
+    root.style.setProperty('--bg-glow', t.bgGlow);
+    root.style.setProperty('--surface', t.surface);
+    root.style.setProperty('--surface-2', t.surface2);
+    root.style.setProperty('--border', t.border);
+    root.style.setProperty('--violet', t.accent);
+    root.style.setProperty('--violet-deep', t.accentDeep);
+    root.style.setProperty('--violet-pale', t.accentPale);
+    root.style.setProperty('--accent-rgb', t.accentRgb);
+    root.style.setProperty('--user-bubble', t.userBubble);
+    root.style.setProperty('--text', t.text);
+    root.style.setProperty('--text-dim', t.textDim);
+    themeDot.style.background = t.accent;
+    themeDot.style.boxShadow = `0 0 6px ${t.accent}`;
+    themePanel.querySelectorAll('.home-theme-swatch').forEach(sw => {
+      sw.classList.toggle('selected', sw.dataset.theme === name);
+    });
+    if (persist !== false) { try { localStorage.setItem('genTheme', name); } catch (e) {} }
+  }
+
+  themePanel.innerHTML = Object.entries(THEMES).map(([key, t]) => `
+    <button class="home-theme-swatch${key === currentTheme ? ' selected' : ''}" data-theme="${key}" title="${t.label}" style="background:${t.swatch};">
+      <span class="check" style="color:${t.checkColor}">✓</span>
+    </button>
+  `).join('');
+  themePanel.querySelectorAll('.home-theme-swatch').forEach(sw => {
+    sw.addEventListener('click', () => { applyTheme(sw.dataset.theme); themePanel.classList.remove('open'); });
+  });
+  applyTheme(currentTheme, false);
+
+  themeBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    themePanel.classList.toggle('open');
+  });
+  document.addEventListener('click', (e) => {
+    if (!themePanel.contains(e.target) && !themeBtn.contains(e.target)) themePanel.classList.remove('open');
+  });
+
+  // ===== Indice secret qui apparait de temps en temps =====
+  const HINTS = [
+    { cmd: '/game', desc: "Lance un mini-jeu de tir d'astéroïdes dans le chat" },
+    { cmd: '/hack', desc: "Réinitialise la conversation actuelle avec un effet glitch" },
+    { cmd: '/golden', desc: "Débloque un thème doré secret" },
+    { cmd: '/reset', desc: "Retire le thème doré et revient au violet" }
+  ];
+  const hintEl = document.getElementById('secretHint');
+  const hintTextEl = document.getElementById('secretHintText');
+  const hintTooltipEl = document.getElementById('secretHintTooltip');
+  let hintHovered = false;
+
+  hintEl.addEventListener('mouseenter', () => { hintHovered = true; });
+  hintEl.addEventListener('mouseleave', () => { hintHovered = false; });
+
+  function showRandomHint() {
+    const h = HINTS[Math.floor(Math.random() * HINTS.length)];
+    hintTextEl.textContent = h.cmd;
+    hintTooltipEl.textContent = h.desc;
+    hintEl.classList.add('show');
+    setTimeout(() => {
+      if (!hintHovered) hintEl.classList.remove('show');
+      else {
+        const check = setInterval(() => {
+          if (!hintHovered) { hintEl.classList.remove('show'); clearInterval(check); }
+        }, 500);
+      }
+    }, 4000);
+  }
+  setInterval(showRandomHint, 9000);
+  setTimeout(showRandomHint, 2500);
+})();
+</script>
 
 </body>
 </html>
