@@ -67,6 +67,54 @@ function checkAppSecret(req, res, next) {
 
 app.get("/health", (req, res) => res.json({ status: "ok" }));
 
+// Petite pause entre les tentatives
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Appelle Gemini, et reessaie automatiquement si le service est
+// temporairement surcharge (erreur 503 "UNAVAILABLE"), frequent sur le
+// niveau gratuit aux heures de forte affluence.
+async function callGeminiWithRetry(systemPrompt, trimmed, attempts = 3) {
+  const model = "gemini-flash-latest"; // alias mis a jour automatiquement par Google
+  let lastError = null;
+
+  for (let i = 0; i < attempts; i++) {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": GEMINI_API_KEY,
+        },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: systemPrompt }] },
+          contents: trimmed,
+        }),
+      }
+    );
+
+    if (response.ok) {
+      return await response.json();
+    }
+
+    const errText = await response.text();
+    console.error(`Erreur API Gemini (tentative ${i + 1}/${attempts}):`, response.status, errText);
+    lastError = { status: response.status, errText };
+
+    // On ne reessaie que si c'est une surcharge temporaire (503) ou un
+    // rate-limit (429). Les autres erreurs (mauvaise cle, etc.) ne se
+    // resoudront pas en reessayant.
+    if (response.status !== 503 && response.status !== 429) break;
+
+    // Pause avant la prochaine tentative (0.8s, puis 1.6s...)
+    if (i < attempts - 1) await sleep(800 * (i + 1));
+  }
+
+  throw lastError;
+}
+
 app.post("/api/chat", checkAppSecret, async (req, res) => {
   try {
     const { messages, mode } = req.body;
@@ -85,29 +133,18 @@ app.post("/api/chat", checkAppSecret, async (req, res) => {
       parts: [{ text: m.text }],
     }));
 
-    const model = "gemini-flash-latest"; // alias mis a jour automatiquement par Google
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-goog-api-key": GEMINI_API_KEY,
-        },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: systemPrompt }] },
-          contents: trimmed,
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error("Erreur API Gemini:", response.status, errText);
-      return res.status(502).json({ error: "Erreur du cerveau IA, reessaie." });
+    let data;
+    try {
+      data = await callGeminiWithRetry(systemPrompt, trimmed);
+    } catch (err) {
+      const status = err?.status;
+      const message =
+        status === 503 || status === 429
+          ? "Le cerveau IA est momentanement surcharge (forte demande sur le niveau gratuit). Reessaie dans une minute."
+          : "Erreur du cerveau IA, reessaie.";
+      return res.status(502).json({ error: message });
     }
 
-    const data = await response.json();
     const reply = data.candidates
       ?.[0]?.content?.parts
       ?.map((p) => p.text)
