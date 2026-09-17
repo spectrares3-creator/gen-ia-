@@ -138,7 +138,11 @@
     golden: { label: 'Golden', swatch: '#e5b93a',
       bg: '#0c0701', bgGlow: '#2a1c05', surface: '#171006', surface2: '#221808', border: '#4a3410',
       accent: '#e5b93a', accentDeep: '#b8860b', accentPale: '#ffe38a', accentRgb: '229, 185, 58',
-      coreLight: '#fff3c4', coreDark: '#5c4308', userBubble: '#332309', text: '#faf1d9', textDim: '#a68f5c' }
+      coreLight: '#fff3c4', coreDark: '#5c4308', userBubble: '#332309', text: '#faf1d9', textDim: '#a68f5c' },
+    spectra: { label: 'Spectra', swatch: '#7ee8ff',
+      bg: '#020409', bgGlow: '#0a1a2e', surface: '#050c16', surface2: '#0a1520', border: '#1c3550',
+      accent: '#7ee8ff', accentDeep: '#3fa9dc', accentPale: '#cdf6ff', accentRgb: '126, 232, 255',
+      coreLight: '#ffffff', coreDark: '#0d2a44', userBubble: '#0f2438', text: '#eaf8ff', textDim: '#6f95ab' }
   };
 
   const root = document.documentElement;
@@ -225,6 +229,20 @@
     if (cmd === '/game') { triggerGlitch(openGame); return; }
     if (cmd === '/golden') { triggerGlitch(() => applyTheme('golden')); return; }
     if (cmd === '/reset') { triggerGlitch(() => applyTheme('violet')); return; }
+    if (cmd === '/spectra') {
+      const code = window.prompt("Code d'accès Spectra :");
+      if (code === '2012!') {
+        triggerGlitch(() => {
+          applyTheme('spectra');
+          messages.push({ text: "Accès Spectra confirmé. Bienvenue.", user: false });
+          renderMessages();
+        });
+      } else {
+        messages.push({ text: "Code incorrect.", user: false });
+        renderMessages();
+      }
+      return;
+    }
 
     messages.push({ text, user: true });
     thinking = true;
