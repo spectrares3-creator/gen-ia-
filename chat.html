@@ -67,6 +67,7 @@
         placeholder="Écris ton message..."
         autocomplete="off"
       >
+      <button type="button" class="mic-btn" id="micBtn" title="Dicter un message">🎙</button>
       <button type="submit">➤</button>
     </form>
 
@@ -153,6 +154,7 @@
   const modeMath = document.getElementById('modeMath');
   const modePhilo = document.getElementById('modePhilo');
   const btnDictate = document.getElementById('btnDictate');
+  const micBtn = document.getElementById('micBtn');
   const btnSpeak = document.getElementById('btnSpeak');
   const btnImage = document.getElementById('btnImage');
   const newConvBtn = document.getElementById('newConvBtn');
@@ -323,20 +325,37 @@
     const recognition = new SpeechRecognition();
     recognition.lang = 'fr-FR';
     recognition.interimResults = false;
-    btnDictate.addEventListener('click', () => {
+    let listening = false;
+
+    function startDictation() {
+      if (listening) return;
       closeMenu();
       input.placeholder = '🎙 Je t\'écoute…';
       recognition.start();
-    });
+    }
+    btnDictate.addEventListener('click', startDictation);
+    micBtn.addEventListener('click', startDictation);
+
+    recognition.onstart = () => { listening = true; micBtn.classList.add('listening'); };
     recognition.onresult = (e) => { input.value = e.results[0][0].transcript; };
-    recognition.onend = () => { input.placeholder = 'Écris ton message...'; };
-    recognition.onerror = () => { input.placeholder = 'Écris ton message...'; };
+    recognition.onend = () => {
+      listening = false;
+      micBtn.classList.remove('listening');
+      input.placeholder = 'Écris ton message...';
+    };
+    recognition.onerror = () => {
+      listening = false;
+      micBtn.classList.remove('listening');
+      input.placeholder = 'Écris ton message...';
+    };
   } else {
-    btnDictate.addEventListener('click', () => {
+    function unsupportedDictation() {
       closeMenu();
       messages.push({ text: "Ton navigateur ne supporte pas la reconnaissance vocale (essaie sur Chrome).", user: false });
       renderMessages();
-    });
+    }
+    btnDictate.addEventListener('click', unsupportedDictation);
+    micBtn.addEventListener('click', unsupportedDictation);
   }
 
   // ===== Conversations (localStorage) =====
