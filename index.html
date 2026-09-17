@@ -30,28 +30,58 @@
   <main class="home-container">
 
     <div class="home-orb">
-      <div class="ring ring-1">
-        <svg viewBox="0 0 150 150">
-          <ellipse cx="75" cy="75" rx="52" ry="19" fill="none" stroke="url(#g1)" stroke-width="2.2"/>
-          <defs><linearGradient id="g1">
-            <stop offset="0%" style="stop-color:#b45cff;stop-opacity:0"/>
-            <stop offset="50%" style="stop-color:#b45cff;stop-opacity:1"/>
-            <stop offset="100%" style="stop-color:#7a2cff;stop-opacity:0"/>
-          </linearGradient></defs>
-        </svg>
-      </div>
-      <div class="ring ring-2">
-        <svg viewBox="0 0 150 150">
-          <ellipse cx="75" cy="75" rx="61" ry="14" fill="none" stroke="url(#g2)" stroke-width="1.4"/>
-          <defs><linearGradient id="g2">
-            <stop offset="0%" style="stop-color:#7a2cff;stop-opacity:0"/>
-            <stop offset="50%" style="stop-color:#d7a6ff;stop-opacity:1"/>
-            <stop offset="100%" style="stop-color:#7a2cff;stop-opacity:0"/>
-          </linearGradient></defs>
-        </svg>
-      </div>
+      <!-- Anneau exterieur fin, gradue comme un cadran -->
+      <svg class="hud-svg hud-static" viewBox="0 0 200 200">
+        <circle cx="100" cy="100" r="94" fill="none" stroke="#4a2f70" stroke-width="1" stroke-dasharray="1 6" opacity="0.6"/>
+        <circle cx="100" cy="100" r="86" fill="none" stroke="#7a2cff" stroke-width="1.3" stroke-dasharray="8 5" opacity="0.35"/>
+      </svg>
+
+      <!-- Arc segmente qui tourne, effet "radar" -->
+      <svg class="hud-svg hud-spin-1" viewBox="0 0 200 200">
+        <defs>
+          <linearGradient id="hg1" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:#d7a6ff;stop-opacity:0"/>
+            <stop offset="100%" style="stop-color:#d7a6ff;stop-opacity:1"/>
+          </linearGradient>
+        </defs>
+        <circle cx="100" cy="100" r="70" fill="none" stroke="url(#hg1)" stroke-width="2.5"
+                stroke-dasharray="95 145" stroke-linecap="round"/>
+        <circle cx="170" cy="100" r="4" fill="#d7a6ff" style="filter:drop-shadow(0 0 4px #b45cff)"/>
+      </svg>
+
+      <!-- Anneau interieur pointille, tourne dans l'autre sens -->
+      <svg class="hud-svg hud-spin-2" viewBox="0 0 200 200">
+        <circle cx="100" cy="100" r="54" fill="none" stroke="#b45cff" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.7"/>
+        <circle cx="100" cy="46" r="2.5" fill="#b45cff"/>
+      </svg>
+
+      <!-- Petits accents de "donnees" qui depassent, style HUD -->
+      <svg class="hud-svg hud-static" viewBox="0 0 200 200">
+        <g stroke="#9c5cff" stroke-width="1" opacity="0.65">
+          <line x1="167" y1="43" x2="180" y2="34"/>
+          <line x1="180" y1="137" x2="193" y2="144"/>
+          <line x1="85" y1="187" x2="82" y2="200"/>
+          <line x1="20" y1="137" x2="7" y2="143"/>
+          <line x1="24" y1="56" x2="11" y2="49"/>
+        </g>
+        <g fill="#d7a6ff">
+          <circle cx="180" cy="34" r="1.8"/>
+          <circle cx="193" cy="144" r="1.8"/>
+          <circle cx="82" cy="200" r="1.8"/>
+          <circle cx="7" cy="143" r="1.8"/>
+          <circle cx="11" cy="49" r="1.8"/>
+        </g>
+      </svg>
+
       <div class="core"></div>
     </div>
+
+    <style>
+      .hud-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+      .hud-spin-1 { animation: spin1 9s linear infinite; transform-origin: 50% 50%; }
+      .hud-spin-2 { animation: spin2 13s linear infinite; transform-origin: 50% 50%; }
+      .hud-static { animation: spin2 55s linear infinite; transform-origin: 50% 50%; }
+    </style>
 
     <h1>Gen IA</h1>
 
