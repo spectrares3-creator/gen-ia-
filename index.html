@@ -82,10 +82,23 @@
     .home-theme-swatch.selected .check { opacity: 1; }
 
     /* ===== Sphere HUD agrandie, avec davantage d'anneaux ===== */
-    .home-orb { width: 340px; height: 340px; position: relative; margin-bottom: 26px; }
+    .home-orb { width: 360px; height: 360px; position: relative; margin-bottom: 26px; }
+    .home-orb::before {
+      content: '';
+      position: absolute;
+      inset: -20px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(var(--accent-rgb), 0.18) 0%, rgba(var(--accent-rgb), 0) 70%);
+      animation: haloGlow 3.2s ease-in-out infinite alternate;
+      pointer-events: none;
+    }
+    @keyframes haloGlow {
+      from { opacity: 0.6; transform: scale(0.94); }
+      to   { opacity: 1; transform: scale(1.04); }
+    }
     .home-orb .core {
-      width: 158px; height: 158px;
-      margin: -79px 0 0 -79px;
+      width: 168px; height: 168px;
+      margin: -84px 0 0 -84px;
     }
     .hud-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
     .hud-spin-1 { animation: spin1 9s linear infinite; transform-origin: 50% 50%; }
@@ -150,50 +163,51 @@
     <div class="home-orb">
       <!-- Anneaux exterieurs fins, gradues comme un cadran -->
       <svg class="hud-svg hud-static" viewBox="0 0 200 200">
-        <circle cx="100" cy="100" r="97" fill="none" stroke="#7a2cff" stroke-width="1" stroke-dasharray="1 5" opacity="0.4"/>
-        <circle cx="100" cy="100" r="94" fill="none" stroke="#4a2f70" stroke-width="1" stroke-dasharray="1 6" opacity="0.6"/>
-        <circle cx="100" cy="100" r="86" fill="none" stroke="#7a2cff" stroke-width="1.3" stroke-dasharray="8 5" opacity="0.35"/>
+        <circle cx="100" cy="100" r="97" fill="none" style="stroke:var(--violet-deep)" stroke-width="1" stroke-dasharray="1 5" opacity="0.4"/>
+        <circle cx="100" cy="100" r="94" fill="none" style="stroke:var(--border)" stroke-width="1" stroke-dasharray="1 6" opacity="0.8"/>
+        <circle cx="100" cy="100" r="86" fill="none" style="stroke:var(--violet-deep)" stroke-width="1.3" stroke-dasharray="8 5" opacity="0.35"/>
       </svg>
 
       <!-- Grand arc segmente qui tourne, effet "radar" -->
       <svg class="hud-svg hud-spin-3" viewBox="0 0 200 200">
         <defs>
           <linearGradient id="hg3" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" style="stop-color:#7a2cff;stop-opacity:0"/>
-            <stop offset="100%" style="stop-color:#9c5cff;stop-opacity:0.9"/>
+            <stop offset="0%" style="stop-color:var(--violet-deep);stop-opacity:0"/>
+            <stop offset="100%" style="stop-color:var(--violet);stop-opacity:0.9"/>
           </linearGradient>
         </defs>
         <circle cx="100" cy="100" r="80" fill="none" stroke="url(#hg3)" stroke-width="2"
                 stroke-dasharray="70 180" stroke-linecap="round"/>
+        <circle cx="20" cy="100" r="3" style="fill:var(--violet-pale);filter:drop-shadow(0 0 4px var(--violet))"/>
       </svg>
 
       <!-- Arc segmente qui tourne, effet "radar" -->
       <svg class="hud-svg hud-spin-1" viewBox="0 0 200 200">
         <defs>
           <linearGradient id="hg1" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" style="stop-color:#d7a6ff;stop-opacity:0"/>
-            <stop offset="100%" style="stop-color:#d7a6ff;stop-opacity:1"/>
+            <stop offset="0%" style="stop-color:var(--violet-pale);stop-opacity:0"/>
+            <stop offset="100%" style="stop-color:var(--violet-pale);stop-opacity:1"/>
           </linearGradient>
         </defs>
         <circle cx="100" cy="100" r="70" fill="none" stroke="url(#hg1)" stroke-width="2.5"
                 stroke-dasharray="95 145" stroke-linecap="round"/>
-        <circle cx="170" cy="100" r="4" fill="#d7a6ff" style="filter:drop-shadow(0 0 4px #b45cff)"/>
+        <circle cx="170" cy="100" r="4" style="fill:var(--violet-pale);filter:drop-shadow(0 0 4px var(--violet))"/>
       </svg>
 
       <!-- Anneau interieur pointille, tourne dans l'autre sens -->
       <svg class="hud-svg hud-spin-2" viewBox="0 0 200 200">
-        <circle cx="100" cy="100" r="54" fill="none" stroke="#b45cff" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.7"/>
-        <circle cx="100" cy="46" r="2.5" fill="#b45cff"/>
+        <circle cx="100" cy="100" r="54" fill="none" style="stroke:var(--violet)" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.7"/>
+        <circle cx="100" cy="46" r="2.5" style="fill:var(--violet)"/>
       </svg>
 
       <!-- Petit anneau tout interieur, tourne vite -->
       <svg class="hud-svg hud-spin-4" viewBox="0 0 200 200">
-        <circle cx="100" cy="100" r="40" fill="none" stroke="#d7a6ff" stroke-width="1" stroke-dasharray="2 4" opacity="0.6"/>
+        <circle cx="100" cy="100" r="40" fill="none" style="stroke:var(--violet-pale)" stroke-width="1" stroke-dasharray="2 4" opacity="0.6"/>
       </svg>
 
       <!-- Petits accents de "donnees" qui depassent, style HUD -->
       <svg class="hud-svg hud-static" viewBox="0 0 200 200">
-        <g stroke="#9c5cff" stroke-width="1" opacity="0.65">
+        <g style="stroke:var(--violet)" stroke-width="1" opacity="0.65">
           <line x1="167" y1="43" x2="180" y2="34"/>
           <line x1="180" y1="137" x2="193" y2="144"/>
           <line x1="85" y1="187" x2="82" y2="200"/>
@@ -201,7 +215,7 @@
           <line x1="24" y1="56" x2="11" y2="49"/>
           <line x1="176" y1="80" x2="192" y2="76"/>
         </g>
-        <g fill="#d7a6ff">
+        <g style="fill:var(--violet-pale)">
           <circle cx="180" cy="34" r="1.8"/>
           <circle cx="193" cy="144" r="1.8"/>
           <circle cx="82" cy="200" r="1.8"/>
@@ -284,6 +298,8 @@
     root.style.setProperty('--violet-deep', t.accentDeep);
     root.style.setProperty('--violet-pale', t.accentPale);
     root.style.setProperty('--accent-rgb', t.accentRgb);
+    root.style.setProperty('--core-light', t.coreLight);
+    root.style.setProperty('--core-dark', t.coreDark);
     root.style.setProperty('--user-bubble', t.userBubble);
     root.style.setProperty('--text', t.text);
     root.style.setProperty('--text-dim', t.textDim);
@@ -335,8 +351,8 @@
 
     // Position aleatoire tout autour de la sphere (rayon fixe depuis le centre)
     const angle = Math.random() * Math.PI * 2;
-    const radius = 178; // depasse legerement le dernier anneau (rayon ~170px sur 340px)
-    const cx = 170, cy = 170; // centre de la sphere (home-orb fait 340x340)
+    const radius = 188; // depasse legerement le dernier anneau (rayon ~180px sur 360px)
+    const cx = 180, cy = 180; // centre de la sphere (home-orb fait 360x360)
     const x = cx + radius * Math.cos(angle);
     const y = cy + radius * Math.sin(angle);
     hintEl.style.left = x + 'px';
