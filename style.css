@@ -64,7 +64,7 @@ body.home {
   width: 90px; height: 90px;
   margin: -45px 0 0 -45px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #f0d9ff, var(--violet) 45%, #4d0b7a 85%);
+  background: radial-gradient(circle at 35% 30%, var(--core-light, #f0d9ff), var(--violet) 45%, var(--core-dark, #4d0b7a) 85%);
   animation: pulse 1.3s ease-in-out infinite alternate;
   box-shadow: 0 0 40px 6px rgba(var(--accent-rgb), 0.5);
 }
@@ -509,6 +509,7 @@ header span::before {
 }
 .game-hint { font-size: 11px; color: var(--text-dim); padding: 10px 16px 4px; text-align: center; }
 .game-controls { display: flex; gap: 14px; padding: 12px 16px 16px; }
+.hidden-controls { display: none !important; }
 .game-controls.hidden-controls { display: none; }
 .game-admin-btn {
   width: 30px; height: 30px;
@@ -553,7 +554,7 @@ header span::before {
   user-select: none;
 }
 .game-btn:active { background: var(--surface-2); border-color: var(--violet-deep); }
-.game-over, .game-upgrade {
+.game-over, .game-upgrade, .game-pause {
   position: absolute;
   inset: 0;
   z-index: 61;
@@ -566,7 +567,7 @@ header span::before {
   text-align: center;
   padding: 20px;
 }
-.game-over.open, .game-upgrade.open { display: flex; }
+.game-over.open, .game-upgrade.open, .game-pause.open { display: flex; }
 .game-over-title, .game-upgrade-title {
   font-size: 20px;
   font-weight: 700;
