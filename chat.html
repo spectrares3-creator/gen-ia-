@@ -78,6 +78,7 @@
     <div class="game-topbar">
       <div class="game-score" id="gameScore">SCORE 0</div>
       <div class="game-lives" id="gameLives"></div>
+      <button class="game-admin-btn hidden-controls" id="gameAdminBtn" title="Pouvoirs Spectra">🛠</button>
       <button class="game-close" id="gameClose" title="Retour au chat">✕</button>
     </div>
     <canvas class="game-canvas" id="gameCanvas" width="330" height="420"></canvas>
@@ -97,6 +98,13 @@
         <button class="game-btn" id="snakeDown">▼</button>
         <button class="game-btn" id="snakeRight">▶</button>
       </div>
+    </div>
+
+    <div class="game-upgrade" id="gameAdminPanel">
+      <div class="game-upgrade-title">Pouvoirs Spectra</div>
+      <div class="game-upgrade-sub">Accès exclusif</div>
+      <div class="game-upgrade-cards" id="gameAdminCards"></div>
+      <button class="game-over-btn" id="gameAdminClose">Fermer</button>
     </div>
 
     <div class="game-select" id="gameSelect">
@@ -572,6 +580,10 @@
   const snakeDownBtn = document.getElementById('snakeDown');
   const snakeLeftBtn = document.getElementById('snakeLeft');
   const snakeRightBtn = document.getElementById('snakeRight');
+  const gameAdminBtn = document.getElementById('gameAdminBtn');
+  const gameAdminPanel = document.getElementById('gameAdminPanel');
+  const gameAdminCards = document.getElementById('gameAdminCards');
+  const gameAdminClose = document.getElementById('gameAdminClose');
 
   const GW = gameCanvas.width, GH = gameCanvas.height;
   const MAX_LIVES = 6;
@@ -590,6 +602,7 @@
     gameOverlay.classList.add('open');
     gameOverEl.classList.remove('open');
     gameUpgradeEl.classList.remove('open');
+    gameAdminPanel.classList.remove('open');
     controlsAsteroidsEl.classList.add('hidden-controls');
     controlsSnakeEl.classList.add('hidden-controls');
     gameHintEl.textContent = 'Choisis un jeu ci-dessous';
@@ -608,6 +621,64 @@
     startSnake();
   });
 
+  // ===== Pouvoirs Spectra (uniquement apres deverrouillage /spectra) =====
+  function updateAdminButtonVisibility() {
+    gameAdminBtn.classList.toggle('hidden-controls', !spectraUnlocked);
+  }
+
+  function asteroidsAdminPowers() {
+    return [
+      { icon: '💯', label: '+100 points', desc: 'Ajoute 100 points au score', apply: () => {
+        score += 100; gameScoreEl.textContent = 'SCORE ' + score;
+      }},
+      { icon: '❤️', label: 'Vies au max', desc: 'Remonte à ' + MAX_LIVES + ' vies', apply: () => {
+        ship.lives = MAX_LIVES; updateLivesUI();
+      }},
+      { icon: '🛡️', label: 'Invincibilité 30s', desc: 'Aucun dégât pendant 30 secondes', apply: () => {
+        ship.invincibleUntil = performance.now() + 30000;
+      }},
+      { icon: '⚡', label: 'Toutes les améliorations', desc: 'Applique les 5 améliorations d’un coup', apply: () => {
+        UPGRADE_POOL.forEach(u => u.apply());
+      }}
+    ];
+  }
+  function snakeAdminPowers() {
+    return [
+      { icon: '💯', label: '+100 points', desc: 'Ajoute 100 points au score', apply: () => {
+        score += 100; gameScoreEl.textContent = 'SCORE ' + score;
+      }},
+      { icon: '🐍', label: '+5 de longueur', desc: 'Fait grandir le serpent instantanément', apply: () => {
+        const tail = snakeBody[snakeBody.length - 1];
+        for (let i = 0; i < 5; i++) snakeBody.push({ ...tail });
+      }},
+      { icon: '🌀', label: 'Mode traversée 20s', desc: 'Traverse les murs et ton propre corps', apply: () => {
+        snakeGodModeUntil = performance.now() + 20000;
+      }},
+      { icon: '🐌', label: 'Ralentir le temps', desc: 'Diminue la vitesse du serpent', apply: () => {
+        snakeTickInterval = Math.min(220, snakeTickInterval + 40);
+      }}
+    ];
+  }
+
+  function renderAdminPanel() {
+    const powers = currentGame === 'snake' ? snakeAdminPowers() : asteroidsAdminPowers();
+    gameAdminCards.innerHTML = powers.map((p, i) => `
+      <button class="upgrade-card" data-idx="${i}">
+        <span class="upgrade-icon">${p.icon}</span>
+        <span><div class="upgrade-label">${p.label}</div><div class="upgrade-desc">${p.desc}</div></span>
+      </button>
+    `).join('');
+    gameAdminCards.querySelectorAll('.upgrade-card').forEach(btn => {
+      btn.addEventListener('click', () => powers[Number(btn.dataset.idx)].apply());
+    });
+  }
+  gameAdminBtn.addEventListener('click', () => {
+    if (!currentGame) return;
+    renderAdminPanel();
+    gameAdminPanel.classList.add('open');
+  });
+  gameAdminClose.addEventListener('click', () => gameAdminPanel.classList.remove('open'));
+
   function updateLivesUI() {
     gameLivesEl.innerHTML = Array.from({ length: ship.lives }).map(() => '<span>❤️</span>').join('');
   }
@@ -624,6 +695,7 @@
     resetAsteroidsState();
     controlsAsteroidsEl.classList.remove('hidden-controls');
     controlsSnakeEl.classList.add('hidden-controls');
+    updateAdminButtonVisibility();
     gameHintEl.textContent = 'Glisse ou touche pour te déplacer • tir automatique';
     gameRunning = true;
     window.addEventListener('keydown', onGameKeyDown);
@@ -641,6 +713,7 @@
     gameOverEl.classList.remove('open');
     gameUpgradeEl.classList.remove('open');
     gameSelectEl.classList.remove('open');
+    gameAdminPanel.classList.remove('open');
     currentGame = null;
   }
   function onGameKeyDown(e) {
@@ -841,6 +914,7 @@
   const SNAKE_COLS = Math.floor(GW / SNAKE_CELL);
   const SNAKE_ROWS = Math.floor(GH / SNAKE_CELL);
   let snakeBody, snakeDir, snakePendingDir, snakeFood, snakeTickInterval, snakeAcc, snakeScore;
+  let snakeGodModeUntil = 0;
 
   function setSnakeDirection(key) {
     if (currentGame !== 'snake') return;
@@ -883,6 +957,7 @@
     resetSnakeState();
     controlsSnakeEl.classList.remove('hidden-controls');
     controlsAsteroidsEl.classList.add('hidden-controls');
+    updateAdminButtonVisibility();
     gameHintEl.textContent = 'Flèches ou pavé tactile pour diriger le serpent';
     gameRunning = true;
     window.addEventListener('keydown', onGameKeyDown);
@@ -903,14 +978,20 @@
 
       const head = snakeBody[0];
       const newHead = { x: head.x + snakeDir.dx, y: head.y + snakeDir.dy };
+      const godMode = performance.now() < snakeGodModeUntil;
 
-      // Collision avec les murs
+      // Collision avec les murs (sauf en mode traversee)
       if (newHead.x < 0 || newHead.x >= SNAKE_COLS || newHead.y < 0 || newHead.y >= SNAKE_ROWS) {
-        gameOverFn('Le serpent a heurté un mur');
-        return;
+        if (godMode) {
+          newHead.x = (newHead.x + SNAKE_COLS) % SNAKE_COLS;
+          newHead.y = (newHead.y + SNAKE_ROWS) % SNAKE_ROWS;
+        } else {
+          gameOverFn('Le serpent a heurté un mur');
+          return;
+        }
       }
-      // Collision avec son propre corps
-      if (snakeBody.some(s => s.x === newHead.x && s.y === newHead.y)) {
+      // Collision avec son propre corps (sauf en mode traversee)
+      if (!godMode && snakeBody.some(s => s.x === newHead.x && s.y === newHead.y)) {
         gameOverFn('Le serpent s\'est mordu');
         return;
       }
