@@ -55,6 +55,10 @@
           <span class="menu-icon">＋</span> Nouvelle conversation
         </button>
         <div class="history-list" id="historyList"></div>
+        <div class="menu-divider hidden-controls" id="spectraDivider"></div>
+        <button class="menu-item hidden-controls" id="btnExitSpectra">
+          <span class="menu-icon">🚪</span> Quitter le mode Spectra
+        </button>
       </div>
     </header>
 
@@ -119,6 +123,11 @@
           <span><div class="upgrade-label">Snake</div><div class="upgrade-desc">Le classique du serpent qui grandit</div></span>
         </button>
       </div>
+    </div>
+
+    <div class="game-pause" id="gamePause">
+      <div class="game-over-title">⏸ Pause</div>
+      <div class="game-over-score">Appuie sur Espace pour reprendre</div>
     </div>
 
     <div class="game-over" id="gameOver">
@@ -197,6 +206,8 @@
   const btnSpeak = document.getElementById('btnSpeak');
   const btnImage = document.getElementById('btnImage');
   const newConvBtn = document.getElementById('newConvBtn');
+  const btnExitSpectra = document.getElementById('btnExitSpectra');
+  const spectraDivider = document.getElementById('spectraDivider');
   const historyList = document.getElementById('historyList');
 
   let mode = 'default';
@@ -269,6 +280,7 @@
       const code = window.prompt("Code d'accès Spectra :");
       if (code === '2012!') {
         spectraUnlocked = true;
+        updateSpectraMenuVisibility();
         triggerGlitch(() => {
           applyTheme('spectra');
           messages.push({ text: "Accès Spectra confirmé. Bienvenue.", user: false });
@@ -512,6 +524,22 @@
   }
   newConvBtn.addEventListener('click', startNewConversation);
 
+  function updateSpectraMenuVisibility() {
+    btnExitSpectra.classList.toggle('hidden-controls', !spectraUnlocked);
+    spectraDivider.classList.toggle('hidden-controls', !spectraUnlocked);
+  }
+  btnExitSpectra.addEventListener('click', () => {
+    spectraUnlocked = false;
+    updateSpectraMenuVisibility();
+    updateAdminButtonVisibility();
+    closeMenu();
+    triggerGlitch(() => {
+      if (currentTheme === 'spectra') applyTheme('violet');
+      messages.push({ text: "Mode Spectra désactivé.", user: false });
+      renderMessages();
+    });
+  });
+
   // ===== Themes =====
   function closeThemePanel() { themePanel.classList.remove('open'); }
   themeBtn.addEventListener('click', (e) => {
@@ -588,6 +616,7 @@
   const GW = gameCanvas.width, GH = gameCanvas.height;
   const MAX_LIVES = 6;
   let gameRunning = false, gameRAF = null;
+  let gamePaused = false;
   let currentGame = null; // 'asteroids' | 'snake'
   let ship, bullets, asteroids, score, spawnTimer, elapsed, moveDir, lastUpgradeScore;
   let gameLastFireAt = 0, gameLastTime = 0;
@@ -692,6 +721,7 @@
   }
   function startAsteroids() {
     currentGame = 'asteroids';
+    gamePaused = false;
     resetAsteroidsState();
     controlsAsteroidsEl.classList.remove('hidden-controls');
     controlsSnakeEl.classList.add('hidden-controls');
@@ -706,6 +736,8 @@
   }
   function closeGame() {
     gameRunning = false;
+    gamePaused = false;
+    document.getElementById('gamePause').classList.remove('open');
     if (gameRAF) cancelAnimationFrame(gameRAF);
     window.removeEventListener('keydown', onGameKeyDown);
     window.removeEventListener('keyup', onGameKeyUp);
@@ -717,6 +749,12 @@
     currentGame = null;
   }
   function onGameKeyDown(e) {
+    if (e.key === ' ' || e.code === 'Space') {
+      e.preventDefault();
+      togglePause();
+      return;
+    }
+    if (gamePaused) return;
     if (currentGame === 'asteroids') {
       if (e.key === 'ArrowLeft' || e.key === 'a') moveDir = -1;
       if (e.key === 'ArrowRight' || e.key === 'd') moveDir = 1;
@@ -730,6 +768,33 @@
     if ((e.key === 'ArrowLeft' || e.key === 'a') && moveDir === -1) moveDir = 0;
     if ((e.key === 'ArrowRight' || e.key === 'd') && moveDir === 1) moveDir = 0;
   }
+
+  function togglePause() {
+    // Pas de pause si aucun jeu actif, ou si un autre ecran est deja ouvert
+    if (!currentGame) return;
+    if (gameOverEl.classList.contains('open') || gameUpgradeEl.classList.contains('open') ||
+        gameAdminPanel.classList.contains('open') || gameSelectEl.classList.contains('open')) return;
+
+    const gamePauseEl = document.getElementById('gamePause');
+    if (!gamePaused) {
+      gamePaused = true;
+      gameRunning = false;
+      if (gameRAF) cancelAnimationFrame(gameRAF);
+      gamePauseEl.classList.add('open');
+    } else {
+      gamePaused = false;
+      gameRunning = true;
+      gamePauseEl.classList.remove('open');
+      gameLastTime = performance.now();
+      if (currentGame === 'asteroids') {
+        gameLastFireAt = performance.now();
+        gameRAF = requestAnimationFrame(asteroidsLoop);
+      } else if (currentGame === 'snake') {
+        gameRAF = requestAnimationFrame(snakeLoop);
+      }
+    }
+  }
+
   gameLeftBtn.addEventListener('pointerdown', () => moveDir = -1);
   gameRightBtn.addEventListener('pointerdown', () => moveDir = 1);
   ['pointerup', 'pointerleave'].forEach(evt => {
@@ -954,6 +1019,7 @@
 
   function startSnake() {
     currentGame = 'snake';
+    gamePaused = false;
     resetSnakeState();
     controlsSnakeEl.classList.remove('hidden-controls');
     controlsAsteroidsEl.classList.add('hidden-controls');
