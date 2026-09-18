@@ -61,12 +61,12 @@
     <main id="messages" class="messages"></main>
 
     <form class="input-area" id="chatForm">
-      <input
-        type="text"
+      <textarea
         id="userInput"
         placeholder="Écris ton message..."
         autocomplete="off"
-      >
+        rows="1"
+      ></textarea>
       <button type="button" class="mic-btn" id="micBtn" title="Dicter un message">🎙</button>
       <button type="submit">➤</button>
     </form>
@@ -81,13 +81,40 @@
       <button class="game-close" id="gameClose" title="Retour au chat">✕</button>
     </div>
     <canvas class="game-canvas" id="gameCanvas" width="330" height="420"></canvas>
-    <div class="game-hint">Glisse ou touche pour te déplacer • tir automatique</div>
-    <div class="game-controls">
+    <div class="game-hint" id="gameHint">Glisse ou touche pour te déplacer • tir automatique</div>
+
+    <div class="game-controls" id="controlsAsteroids">
       <button class="game-btn" id="gameLeft">◀</button>
       <button class="game-btn" id="gameRight">▶</button>
     </div>
+
+    <div class="game-controls game-dpad" id="controlsSnake">
+      <div class="dpad-row">
+        <button class="game-btn" id="snakeUp">▲</button>
+      </div>
+      <div class="dpad-row">
+        <button class="game-btn" id="snakeLeft">◀</button>
+        <button class="game-btn" id="snakeDown">▼</button>
+        <button class="game-btn" id="snakeRight">▶</button>
+      </div>
+    </div>
+
+    <div class="game-select" id="gameSelect">
+      <div class="game-upgrade-title">Choisis un jeu</div>
+      <div class="game-upgrade-cards">
+        <button class="upgrade-card" id="selectAsteroids">
+          <span class="upgrade-icon">☄️</span>
+          <span><div class="upgrade-label">Astéroïdes</div><div class="upgrade-desc">Tir à l'infini, vies et améliorations</div></span>
+        </button>
+        <button class="upgrade-card" id="selectSnake">
+          <span class="upgrade-icon">🐍</span>
+          <span><div class="upgrade-label">Snake</div><div class="upgrade-desc">Le classique du serpent qui grandit</div></span>
+        </button>
+      </div>
+    </div>
+
     <div class="game-over" id="gameOver">
-      <div class="game-over-title">Vaisseau détruit</div>
+      <div class="game-over-title" id="gameOverTitle">Vaisseau détruit</div>
       <div class="game-over-score" id="gameOverScore">Score : 0</div>
       <div class="game-over-actions">
         <button class="game-over-btn" id="gameQuit">Retour au chat</button>
@@ -166,6 +193,7 @@
 
   let mode = 'default';
   let speaking = false;
+  let spectraUnlocked = false;
   let thinking = false;
   let speakEnabled = true;
   let currentTheme = localStorage.getItem('genTheme') || 'violet';
@@ -226,12 +254,13 @@
   async function sendToGen(text) {
     const cmd = text.trim().toLowerCase();
     if (cmd === '/hack') { triggerGlitch(resetConversation); return; }
-    if (cmd === '/game') { triggerGlitch(openGame); return; }
+    if (cmd === '/game') { triggerGlitch(openGameMenu); return; }
     if (cmd === '/golden') { triggerGlitch(() => applyTheme('golden')); return; }
     if (cmd === '/reset') { triggerGlitch(() => applyTheme('violet')); return; }
     if (cmd === '/spectra') {
       const code = window.prompt("Code d'accès Spectra :");
       if (code === '2012!') {
+        spectraUnlocked = true;
         triggerGlitch(() => {
           applyTheme('spectra');
           messages.push({ text: "Accès Spectra confirmé. Bienvenue.", user: false });
@@ -241,6 +270,23 @@
         messages.push({ text: "Code incorrect.", user: false });
         renderMessages();
       }
+      return;
+    }
+    if (cmd === '/logs' && spectraUnlocked) {
+      const logText = [
+        "=== LOGS SPECTRA ===",
+        "Heure : " + new Date().toLocaleString('fr-FR'),
+        "Thème actif : " + currentTheme,
+        "Mode : " + mode,
+        "Messages (conversation actuelle) : " + messages.length,
+        "Conversations archivées : " + conversations.length,
+        "Voix activée : " + (speakEnabled ? "oui" : "non"),
+        "Navigateur : " + navigator.userAgent,
+        "",
+        "(Ceci reflète l'état local de ton navigateur, pas les vrais logs du serveur.)"
+      ].join('\n');
+      messages.push({ text: logText, user: false });
+      renderMessages();
       return;
     }
 
@@ -291,8 +337,21 @@
     const text = input.value.trim();
     if (text && !thinking) {
       input.value = '';
+      input.style.height = 'auto';
       sendToGen(text);
     }
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      form.requestSubmit();
+    }
+  });
+
+  input.addEventListener('input', () => {
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 120) + 'px';
   });
 
   // ===== Menu =====
@@ -355,7 +414,11 @@
     micBtn.addEventListener('click', startDictation);
 
     recognition.onstart = () => { listening = true; micBtn.classList.add('listening'); };
-    recognition.onresult = (e) => { input.value = e.results[0][0].transcript; };
+    recognition.onresult = (e) => {
+      input.value = e.results[0][0].transcript;
+      input.style.height = 'auto';
+      input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+    };
     recognition.onend = () => {
       listening = false;
       micBtn.classList.remove('listening');
@@ -490,28 +553,65 @@
   const gameScoreEl = document.getElementById('gameScore');
   const gameLivesEl = document.getElementById('gameLives');
   const gameCloseBtn = document.getElementById('gameClose');
+  const gameHintEl = document.getElementById('gameHint');
+  const controlsAsteroidsEl = document.getElementById('controlsAsteroids');
+  const controlsSnakeEl = document.getElementById('controlsSnake');
   const gameLeftBtn = document.getElementById('gameLeft');
   const gameRightBtn = document.getElementById('gameRight');
   const gameOverEl = document.getElementById('gameOver');
+  const gameOverTitleEl = document.getElementById('gameOverTitle');
   const gameOverScoreEl = document.getElementById('gameOverScore');
   const gameQuitBtn = document.getElementById('gameQuit');
   const gameRetryBtn = document.getElementById('gameRetry');
   const gameUpgradeEl = document.getElementById('gameUpgrade');
   const gameUpgradeCardsEl = document.getElementById('gameUpgradeCards');
+  const gameSelectEl = document.getElementById('gameSelect');
+  const selectAsteroidsBtn = document.getElementById('selectAsteroids');
+  const selectSnakeBtn = document.getElementById('selectSnake');
+  const snakeUpBtn = document.getElementById('snakeUp');
+  const snakeDownBtn = document.getElementById('snakeDown');
+  const snakeLeftBtn = document.getElementById('snakeLeft');
+  const snakeRightBtn = document.getElementById('snakeRight');
 
   const GW = gameCanvas.width, GH = gameCanvas.height;
   const MAX_LIVES = 6;
   let gameRunning = false, gameRAF = null;
+  let currentGame = null; // 'asteroids' | 'snake'
   let ship, bullets, asteroids, score, spawnTimer, elapsed, moveDir, lastUpgradeScore;
   let gameLastFireAt = 0, gameLastTime = 0;
 
   function themeColor(varName) {
     return getComputedStyle(root).getPropertyValue(varName).trim() || '#b45cff';
   }
+
+  // ===== Ecran de selection du jeu =====
+  function openGameMenu() {
+    currentGame = null;
+    gameOverlay.classList.add('open');
+    gameOverEl.classList.remove('open');
+    gameUpgradeEl.classList.remove('open');
+    controlsAsteroidsEl.classList.add('hidden-controls');
+    controlsSnakeEl.classList.add('hidden-controls');
+    gameHintEl.textContent = 'Choisis un jeu ci-dessous';
+    gameScoreEl.textContent = 'SCORE 0';
+    gameLivesEl.innerHTML = '';
+    gameCtx.fillStyle = themeColor('--surface');
+    gameCtx.fillRect(0, 0, GW, GH);
+    gameSelectEl.classList.add('open');
+  }
+  selectAsteroidsBtn.addEventListener('click', () => {
+    gameSelectEl.classList.remove('open');
+    startAsteroids();
+  });
+  selectSnakeBtn.addEventListener('click', () => {
+    gameSelectEl.classList.remove('open');
+    startSnake();
+  });
+
   function updateLivesUI() {
     gameLivesEl.innerHTML = Array.from({ length: ship.lives }).map(() => '<span>❤️</span>').join('');
   }
-  function resetGameState() {
+  function resetAsteroidsState() {
     ship = { x: GW / 2, y: GH - 34, w: 22, h: 22, speed: 4.5, lives: 3, invincibleUntil: 0, fireInterval: 260, bulletCount: 1, bulletPower: 1 };
     bullets = []; asteroids = []; score = 0; spawnTimer = 0; elapsed = 0; moveDir = 0; lastUpgradeScore = 0;
     gameScoreEl.textContent = 'SCORE 0';
@@ -519,15 +619,18 @@
     gameUpgradeEl.classList.remove('open');
     updateLivesUI();
   }
-  function openGame() {
-    resetGameState();
-    gameOverlay.classList.add('open');
+  function startAsteroids() {
+    currentGame = 'asteroids';
+    resetAsteroidsState();
+    controlsAsteroidsEl.classList.remove('hidden-controls');
+    controlsSnakeEl.classList.add('hidden-controls');
+    gameHintEl.textContent = 'Glisse ou touche pour te déplacer • tir automatique';
     gameRunning = true;
     window.addEventListener('keydown', onGameKeyDown);
     window.addEventListener('keyup', onGameKeyUp);
     gameLastFireAt = 0;
     gameLastTime = performance.now();
-    gameRAF = requestAnimationFrame(gameLoop);
+    gameRAF = requestAnimationFrame(asteroidsLoop);
   }
   function closeGame() {
     gameRunning = false;
@@ -537,13 +640,20 @@
     gameOverlay.classList.remove('open');
     gameOverEl.classList.remove('open');
     gameUpgradeEl.classList.remove('open');
+    gameSelectEl.classList.remove('open');
+    currentGame = null;
   }
   function onGameKeyDown(e) {
-    if (e.key === 'ArrowLeft' || e.key === 'a') moveDir = -1;
-    if (e.key === 'ArrowRight' || e.key === 'd') moveDir = 1;
+    if (currentGame === 'asteroids') {
+      if (e.key === 'ArrowLeft' || e.key === 'a') moveDir = -1;
+      if (e.key === 'ArrowRight' || e.key === 'd') moveDir = 1;
+    } else if (currentGame === 'snake') {
+      setSnakeDirection(e.key);
+    }
     if (e.key === 'Escape') closeGame();
   }
   function onGameKeyUp(e) {
+    if (currentGame !== 'asteroids') return;
     if ((e.key === 'ArrowLeft' || e.key === 'a') && moveDir === -1) moveDir = 0;
     if ((e.key === 'ArrowRight' || e.key === 'd') && moveDir === 1) moveDir = 0;
   }
@@ -553,22 +663,24 @@
     gameLeftBtn.addEventListener(evt, () => { if (moveDir === -1) moveDir = 0; });
     gameRightBtn.addEventListener(evt, () => { if (moveDir === 1) moveDir = 0; });
   });
+  snakeUpBtn.addEventListener('click', () => setSnakeDirection('ArrowUp'));
+  snakeDownBtn.addEventListener('click', () => setSnakeDirection('ArrowDown'));
+  snakeLeftBtn.addEventListener('click', () => setSnakeDirection('ArrowLeft'));
+  snakeRightBtn.addEventListener('click', () => setSnakeDirection('ArrowRight'));
   function canvasPointerX(e) {
     const rect = gameCanvas.getBoundingClientRect();
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     return (clientX - rect.left) / rect.width * GW;
   }
   let dragging = false;
-  gameCanvas.addEventListener('pointerdown', (e) => { dragging = true; ship.x = canvasPointerX(e); });
-  gameCanvas.addEventListener('pointermove', (e) => { if (dragging) ship.x = canvasPointerX(e); });
+  gameCanvas.addEventListener('pointerdown', (e) => { if (currentGame === 'asteroids') { dragging = true; ship.x = canvasPointerX(e); } });
+  gameCanvas.addEventListener('pointermove', (e) => { if (dragging && currentGame === 'asteroids') ship.x = canvasPointerX(e); });
   window.addEventListener('pointerup', () => dragging = false);
   gameCloseBtn.addEventListener('click', closeGame);
   gameQuitBtn.addEventListener('click', closeGame);
   gameRetryBtn.addEventListener('click', () => {
-    resetGameState();
-    gameRunning = true;
-    gameLastTime = performance.now();
-    gameRAF = requestAnimationFrame(gameLoop);
+    if (currentGame === 'asteroids') startAsteroids();
+    else if (currentGame === 'snake') startSnake();
   });
 
   const UPGRADE_POOL = [
@@ -599,7 +711,7 @@
         gameUpgradeEl.classList.remove('open');
         gameRunning = true;
         gameLastTime = performance.now();
-        gameRAF = requestAnimationFrame(gameLoop);
+        gameRAF = requestAnimationFrame(asteroidsLoop);
       });
     });
     gameUpgradeEl.classList.add('open');
@@ -618,13 +730,14 @@
       vertexFactors, craters
     });
   }
-  function gameOverFn() {
+  function gameOverFn(title) {
     gameRunning = false;
     if (gameRAF) cancelAnimationFrame(gameRAF);
+    gameOverTitleEl.textContent = title || 'Partie terminée';
     gameOverScoreEl.textContent = 'Score : ' + score;
     gameOverEl.classList.add('open');
   }
-  function gameLoop(now) {
+  function asteroidsLoop(now) {
     if (!gameRunning) return;
     const dt = Math.min(now - gameLastTime, 40);
     gameLastTime = now;
@@ -669,14 +782,14 @@
           ship.lives -= 1;
           ship.invincibleUntil = now + 1400;
           updateLivesUI();
-          if (ship.lives <= 0) { gameOverFn(); return; }
+          if (ship.lives <= 0) { gameOverFn('Vaisseau détruit'); return; }
         }
       }
     }
-    drawGame();
-    gameRAF = requestAnimationFrame(gameLoop);
+    drawAsteroids();
+    gameRAF = requestAnimationFrame(asteroidsLoop);
   }
-  function drawGame() {
+  function drawAsteroids() {
     const accent = themeColor('--violet'), accentPale = themeColor('--violet-pale'), bg = themeColor('--surface');
     gameCtx.fillStyle = bg;
     gameCtx.fillRect(0, 0, GW, GH);
@@ -721,6 +834,131 @@
       gameCtx.arc(a.x - a.r * 0.35, a.y - a.r * 0.35, a.r * 0.18, 0, Math.PI * 2);
       gameCtx.fill();
     });
+  }
+
+  // ===== Snake =====
+  const SNAKE_CELL = 22;
+  const SNAKE_COLS = Math.floor(GW / SNAKE_CELL);
+  const SNAKE_ROWS = Math.floor(GH / SNAKE_CELL);
+  let snakeBody, snakeDir, snakePendingDir, snakeFood, snakeTickInterval, snakeAcc, snakeScore;
+
+  function setSnakeDirection(key) {
+    if (currentGame !== 'snake') return;
+    const map = {
+      ArrowUp: { dx: 0, dy: -1 }, ArrowDown: { dx: 0, dy: 1 },
+      ArrowLeft: { dx: -1, dy: 0 }, ArrowRight: { dx: 1, dy: 0 }
+    };
+    const d = map[key];
+    if (!d) return;
+    // Empeche de faire volte-face directement sur soi-meme
+    if (snakeDir && d.dx === -snakeDir.dx && d.dy === -snakeDir.dy && snakeBody.length > 1) return;
+    snakePendingDir = d;
+  }
+
+  function randomFoodCell() {
+    let cell;
+    do {
+      cell = { x: Math.floor(Math.random() * SNAKE_COLS), y: Math.floor(Math.random() * SNAKE_ROWS) };
+    } while (snakeBody.some(s => s.x === cell.x && s.y === cell.y));
+    return cell;
+  }
+
+  function resetSnakeState() {
+    const cx = Math.floor(SNAKE_COLS / 2), cy = Math.floor(SNAKE_ROWS / 2);
+    snakeBody = [{ x: cx, y: cy }, { x: cx - 1, y: cy }, { x: cx - 2, y: cy }];
+    snakeDir = { dx: 1, dy: 0 };
+    snakePendingDir = null;
+    snakeFood = randomFoodCell();
+    snakeTickInterval = 150;
+    snakeAcc = 0;
+    snakeScore = 0;
+    score = 0;
+    gameScoreEl.textContent = 'SCORE 0';
+    gameOverEl.classList.remove('open');
+    gameLivesEl.innerHTML = '';
+  }
+
+  function startSnake() {
+    currentGame = 'snake';
+    resetSnakeState();
+    controlsSnakeEl.classList.remove('hidden-controls');
+    controlsAsteroidsEl.classList.add('hidden-controls');
+    gameHintEl.textContent = 'Flèches ou pavé tactile pour diriger le serpent';
+    gameRunning = true;
+    window.addEventListener('keydown', onGameKeyDown);
+    window.addEventListener('keyup', onGameKeyUp);
+    gameLastTime = performance.now();
+    gameRAF = requestAnimationFrame(snakeLoop);
+  }
+
+  function snakeLoop(now) {
+    if (!gameRunning) return;
+    const dt = Math.min(now - gameLastTime, 60);
+    gameLastTime = now;
+    snakeAcc += dt;
+
+    if (snakeAcc >= snakeTickInterval) {
+      snakeAcc = 0;
+      if (snakePendingDir) { snakeDir = snakePendingDir; snakePendingDir = null; }
+
+      const head = snakeBody[0];
+      const newHead = { x: head.x + snakeDir.dx, y: head.y + snakeDir.dy };
+
+      // Collision avec les murs
+      if (newHead.x < 0 || newHead.x >= SNAKE_COLS || newHead.y < 0 || newHead.y >= SNAKE_ROWS) {
+        gameOverFn('Le serpent a heurté un mur');
+        return;
+      }
+      // Collision avec son propre corps
+      if (snakeBody.some(s => s.x === newHead.x && s.y === newHead.y)) {
+        gameOverFn('Le serpent s\'est mordu');
+        return;
+      }
+
+      snakeBody.unshift(newHead);
+      if (newHead.x === snakeFood.x && newHead.y === snakeFood.y) {
+        score += 10;
+        gameScoreEl.textContent = 'SCORE ' + score;
+        snakeFood = randomFoodCell();
+        snakeTickInterval = Math.max(70, snakeTickInterval - 3);
+      } else {
+        snakeBody.pop();
+      }
+    }
+
+    drawSnake();
+    gameRAF = requestAnimationFrame(snakeLoop);
+  }
+
+  function drawSnake() {
+    const accent = themeColor('--violet'), accentPale = themeColor('--violet-pale'), bg = themeColor('--surface');
+    gameCtx.fillStyle = bg;
+    gameCtx.fillRect(0, 0, GW, GH);
+
+    // Nourriture
+    gameCtx.fillStyle = accentPale;
+    gameCtx.beginPath();
+    gameCtx.arc(
+      snakeFood.x * SNAKE_CELL + SNAKE_CELL / 2,
+      snakeFood.y * SNAKE_CELL + SNAKE_CELL / 2,
+      SNAKE_CELL * 0.32, 0, Math.PI * 2
+    );
+    gameCtx.fill();
+
+    // Corps du serpent - degrade de la tete (claire) a la queue (foncee)
+    snakeBody.forEach((seg, i) => {
+      const t = i / Math.max(1, snakeBody.length - 1);
+      gameCtx.fillStyle = i === 0 ? accentPale : accent;
+      gameCtx.globalAlpha = i === 0 ? 1 : Math.max(0.4, 1 - t * 0.6);
+      const pad = i === 0 ? 1 : 2;
+      gameCtx.beginPath();
+      gameCtx.roundRect(
+        seg.x * SNAKE_CELL + pad, seg.y * SNAKE_CELL + pad,
+        SNAKE_CELL - pad * 2, SNAKE_CELL - pad * 2, 6
+      );
+      gameCtx.fill();
+    });
+    gameCtx.globalAlpha = 1;
   }
 
   // ===== Init =====
