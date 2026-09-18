@@ -82,10 +82,10 @@
     .home-theme-swatch.selected .check { opacity: 1; }
 
     /* ===== Sphere HUD agrandie, avec davantage d'anneaux ===== */
-    .home-orb { width: 280px; height: 280px; position: relative; margin-bottom: 22px; }
+    .home-orb { width: 340px; height: 340px; position: relative; margin-bottom: 26px; }
     .home-orb .core {
-      width: 130px; height: 130px;
-      margin: -65px 0 0 -65px;
+      width: 158px; height: 158px;
+      margin: -79px 0 0 -79px;
     }
     .hud-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
     .hud-spin-1 { animation: spin1 9s linear infinite; transform-origin: 50% 50%; }
@@ -94,10 +94,12 @@
     .hud-spin-4 { animation: spin2 6s linear infinite; transform-origin: 50% 50%; }
     .hud-static { animation: spin2 70s linear infinite; transform-origin: 50% 50%; }
 
-    /* ===== Indice secret qui apparait de temps en temps ===== */
+    /* ===== Indice secret qui apparait de temps en temps, a une position   */
+    /* aleatoire (calculee en JS) tout autour de la sphere.                 */
     .secret-hint {
       position: absolute;
-      top: -6px; right: -6px;
+      top: 50%; left: 50%;
+      --hint-scale: 0.85;
       background: var(--surface);
       border: 1px solid var(--violet-deep);
       color: var(--violet-pale);
@@ -108,16 +110,18 @@
       border-radius: 100px;
       cursor: default;
       opacity: 0;
-      transform: scale(0.85);
+      transform: translate(-50%, -50%) scale(var(--hint-scale));
       pointer-events: none;
       transition: opacity 0.4s, transform 0.4s;
       box-shadow: 0 0 14px rgba(var(--accent-rgb), 0.35);
       z-index: 5;
+      white-space: nowrap;
     }
-    .secret-hint.show { opacity: 1; transform: scale(1); pointer-events: auto; }
+    .secret-hint.show { opacity: 1; --hint-scale: 1; pointer-events: auto; }
     .secret-hint-tooltip {
       position: absolute;
-      top: 130%; right: 0;
+      top: 130%; left: 50%;
+      transform: translateX(-50%) translateY(-4px);
       width: 190px;
       background: var(--surface-2);
       border: 1px solid var(--border);
@@ -127,11 +131,11 @@
       font-family: inherit;
       color: var(--text-dim);
       opacity: 0;
-      transform: translateY(-4px);
       transition: opacity 0.15s, transform 0.15s;
       pointer-events: none;
+      white-space: normal;
     }
-    .secret-hint:hover .secret-hint-tooltip { opacity: 1; transform: translateY(0); }
+    .secret-hint:hover .secret-hint-tooltip { opacity: 1; transform: translateX(-50%) translateY(0); }
   </style>
 </head>
 <body class="home">
@@ -328,6 +332,16 @@
     const h = HINTS[Math.floor(Math.random() * HINTS.length)];
     hintTextEl.textContent = h.cmd;
     hintTooltipEl.textContent = h.desc;
+
+    // Position aleatoire tout autour de la sphere (rayon fixe depuis le centre)
+    const angle = Math.random() * Math.PI * 2;
+    const radius = 178; // depasse legerement le dernier anneau (rayon ~170px sur 340px)
+    const cx = 170, cy = 170; // centre de la sphere (home-orb fait 340x340)
+    const x = cx + radius * Math.cos(angle);
+    const y = cy + radius * Math.sin(angle);
+    hintEl.style.left = x + 'px';
+    hintEl.style.top = y + 'px';
+
     hintEl.classList.add('show');
     setTimeout(() => {
       if (!hintHovered) hintEl.classList.remove('show');
