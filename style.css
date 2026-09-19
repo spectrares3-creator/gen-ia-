@@ -112,6 +112,22 @@ h1 {
 }
 .start-btn:active { transform: translateY(0); }
 
+.signup-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 11px 26px;
+  border-radius: 100px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+  font-weight: 600;
+  font-size: 13px;
+  transition: border-color 0.15s, color 0.15s;
+}
+.signup-btn:hover { border-color: var(--violet); color: var(--text); }
+
 /* ===== Page de chat ===== */
 
 .chat-app {
@@ -612,3 +628,68 @@ header span::before {
 .upgrade-icon { font-size: 22px; flex-shrink: 0; }
 .upgrade-label { font-size: 13px; font-weight: 600; color: var(--text); }
 .upgrade-desc { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+
+/* ===== Écran de connexion (comptes) ===== */
+.login-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg, #07030d);
+  padding: 24px;
+}
+.login-overlay.open { display: flex; }
+.login-box {
+  width: 100%;
+  max-width: 320px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 0 40px 6px rgba(var(--accent-rgb), 0.15);
+}
+.login-box h2 {
+  margin: 0 0 6px;
+  font-size: 18px;
+  color: var(--text);
+  text-align: center;
+}
+.login-box input {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 11px 14px;
+  color: var(--text);
+  font-size: 14px;
+  outline: none;
+}
+.login-box input:focus { border-color: var(--violet); }
+.login-box button {
+  margin-top: 4px;
+  background: var(--violet);
+  color: #000;
+  border: none;
+  border-radius: 10px;
+  padding: 11px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.login-box button:hover { filter: brightness(1.08); }
+.login-error {
+  min-height: 16px;
+  font-size: 12px;
+  color: #ff6b6b;
+  text-align: center;
+}
+.login-success {
+  min-height: 16px;
+  font-size: 12px;
+  color: #4ade80;
+  text-align: center;
+}
