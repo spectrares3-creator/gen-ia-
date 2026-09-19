@@ -66,9 +66,24 @@ body.home {
   border-radius: 50%;
   background: radial-gradient(circle at 35% 30%, var(--core-light, #f0d9ff), var(--violet) 45%, var(--core-dark, #4d0b7a) 85%);
   animation: pulse 1.3s ease-in-out infinite alternate;
-  box-shadow: 0 0 40px 6px rgba(var(--accent-rgb), 0.5);
+  box-shadow: 0 0 40px 6px rgba(var(--accent-rgb), 0.5), inset -10px -12px 22px rgba(0,0,0,0.35);
+  transform-style: preserve-3d;
 }
-@keyframes pulse { from { transform: scale(0.96); } to { transform: scale(1.06); } }
+.home-orb .core::after {
+  content: '';
+  position: absolute;
+  top: 16%; left: 22%;
+  width: 32%; height: 24%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.65), rgba(255,255,255,0) 70%);
+  filter: blur(1px);
+  pointer-events: none;
+}
+@keyframes pulse {
+  0%   { transform: scale(0.96) rotateX(0deg)  rotateY(0deg); }
+  50%  { transform: scale(1.02) rotateX(5deg)  rotateY(10deg); }
+  100% { transform: scale(1.06) rotateX(-4deg) rotateY(-8deg); }
+}
 
 .logo {
   font-size: 40px;
