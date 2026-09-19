@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Créer un compte — Gen IA</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="home">
+
+  <main class="home-container">
+    <h1>Créer un compte</h1>
+    <p>
+      Réservé à l'administrateur de Gen : il faut le code administrateur
+      pour créer un nouveau compte.
+    </p>
+
+    <form class="login-box" id="signupForm" style="max-width:320px;">
+      <input type="text" id="signupUsername" placeholder="Identifiant du nouveau compte" autocomplete="off" required>
+      <input type="password" id="signupPassword" placeholder="Mot de passe (6 caractères min)" autocomplete="new-password" required minlength="6">
+      <input type="password" id="signupSecret" placeholder="Code administrateur" autocomplete="off" required>
+      <button type="submit">Créer le compte</button>
+      <div class="login-error" id="signupError"></div>
+      <div class="login-success" id="signupSuccess"></div>
+    </form>
+
+    <a href="index.html" class="signup-btn" style="margin-top:20px;">← Retour à l'accueil</a>
+  </main>
+
+<script>
+(function() {
+  const form = document.getElementById('signupForm');
+  const username = document.getElementById('signupUsername');
+  const password = document.getElementById('signupPassword');
+  const secret = document.getElementById('signupSecret');
+  const errorEl = document.getElementById('signupError');
+  const successEl = document.getElementById('signupSuccess');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errorEl.textContent = '';
+    successEl.textContent = '';
+    try {
+      const response = await fetch('/api/admin/create-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-gen-secret': secret.value },
+        body: JSON.stringify({ username: username.value.trim(), password: password.value })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        errorEl.textContent = data.error || "Impossible de créer le compte";
+        return;
+      }
+      successEl.textContent = "Compte créé ! Tu peux maintenant te connecter sur la page de chat.";
+      form.reset();
+    } catch (err) {
+      errorEl.textContent = "Impossible de joindre le serveur.";
+    }
+  });
+})();
+</script>
+
+</body>
+</html>
