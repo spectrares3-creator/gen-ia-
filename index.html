@@ -82,7 +82,7 @@
     .home-theme-swatch.selected .check { opacity: 1; }
 
     /* ===== Sphere HUD agrandie, avec davantage d'anneaux ===== */
-    .home-orb { width: 360px; height: 360px; position: relative; margin-bottom: 26px; }
+    .home-orb { width: 360px; height: 360px; position: relative; margin-bottom: 26px; perspective: 900px; }
     .home-orb::before {
       content: '';
       position: absolute;
@@ -101,11 +101,22 @@
       margin: -84px 0 0 -84px;
     }
     .hud-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-    .hud-spin-1 { animation: spin1 9s linear infinite; transform-origin: 50% 50%; }
-    .hud-spin-2 { animation: spin2 13s linear infinite; transform-origin: 50% 50%; }
-    .hud-spin-3 { animation: spin1 17s linear infinite reverse; transform-origin: 50% 50%; }
-    .hud-spin-4 { animation: spin2 6s linear infinite; transform-origin: 50% 50%; }
-    .hud-static { animation: spin2 70s linear infinite; transform-origin: 50% 50%; }
+
+    /* Chaque anneau est incline (rotateX/rotateY) comme les anneaux de
+       Saturne, et continue de tourner sur lui-meme (rotateZ anime) - la
+       perspective posee sur .home-orb transforme ce plan incline en
+       ellipse et donne l'illusion de profondeur. */
+    @keyframes spin3d-1 { from { transform: rotateX(60deg) rotateZ(0deg); } to { transform: rotateX(60deg) rotateZ(360deg); } }
+    @keyframes spin3d-2 { from { transform: rotateX(-55deg) rotateZ(360deg); } to { transform: rotateX(-55deg) rotateZ(0deg); } }
+    @keyframes spin3d-3 { from { transform: rotateX(68deg) rotateY(15deg) rotateZ(0deg); } to { transform: rotateX(68deg) rotateY(15deg) rotateZ(360deg); } }
+    @keyframes spin3d-4 { from { transform: rotateX(-62deg) rotateY(-10deg) rotateZ(360deg); } to { transform: rotateX(-62deg) rotateY(-10deg) rotateZ(0deg); } }
+    @keyframes spin3d-static { from { transform: rotateX(50deg) rotateZ(0deg); } to { transform: rotateX(50deg) rotateZ(360deg); } }
+
+    .hud-spin-1 { animation: spin3d-1 9s linear infinite; transform-origin: 50% 50%; }
+    .hud-spin-2 { animation: spin3d-2 13s linear infinite; transform-origin: 50% 50%; }
+    .hud-spin-3 { animation: spin3d-3 17s linear infinite reverse; transform-origin: 50% 50%; }
+    .hud-spin-4 { animation: spin3d-4 6s linear infinite; transform-origin: 50% 50%; }
+    .hud-static { animation: spin3d-static 70s linear infinite; transform-origin: 50% 50%; }
 
     /* ===== Indice secret qui apparait de temps en temps, a une position   */
     /* aleatoire (calculee en JS) tout autour de la sphere.                 */
