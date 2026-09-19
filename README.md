@@ -1,3 +1,4 @@
+[README.md](https://github.com/user-attachments/files/32411500/README.md)
 # Serveur Gen — le cerveau (+ le site web)
 
 Ce serveur fait deux choses en un seul déploiement :
