@@ -118,6 +118,28 @@
     .hud-spin-4 { animation: spin3d-4 6s linear infinite; transform-origin: 50% 50%; }
     .hud-static { animation: spin3d-static 70s linear infinite; transform-origin: 50% 50%; }
 
+    /* Faisceaux lumineux qui tournent autour de la sphere, comme des rayons
+       d'energie - couleur pilotee par --accent-rgb donc suit le theme. */
+    .core-rays {
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 260px; height: 260px;
+      margin: -130px 0 0 -130px;
+      border-radius: 50%;
+      background: conic-gradient(from 0deg,
+        transparent 0deg, rgba(var(--accent-rgb), 0.55) 6deg, transparent 18deg,
+        transparent 150deg, rgba(var(--accent-rgb), 0.35) 158deg, transparent 172deg,
+        transparent 330deg, rgba(var(--accent-rgb), 0.45) 338deg, transparent 352deg);
+      filter: blur(4px);
+      mix-blend-mode: screen;
+      animation: raysSpin 6s linear infinite;
+      pointer-events: none;
+    }
+    @keyframes raysSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+    /* Etincelles qui partent du centre de la sphere (canvas, voir le script) */
+    .orb-sparks { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
     /* ===== Indice secret qui apparait de temps en temps, a une position   */
     /* aleatoire (calculee en JS) tout autour de la sphere.                 */
     .secret-hint {
@@ -236,7 +258,9 @@
         </g>
       </svg>
 
+      <div class="core-rays"></div>
       <div class="core"></div>
+      <canvas class="orb-sparks" id="orbSparks"></canvas>
 
       <div class="secret-hint" id="secretHint">
         <span id="secretHintText">/game</span>
@@ -385,6 +409,57 @@
   }
   setInterval(showRandomHint, 9000);
   setTimeout(showRandomHint, 2500);
+
+  // ===== Etincelles qui partent du centre de la sphere =====
+  const sparkCanvas = document.getElementById('orbSparks');
+  const ctx = sparkCanvas.getContext('2d');
+  const ORB_SIZE = 360;
+  const DPR = window.devicePixelRatio || 1;
+  sparkCanvas.width = ORB_SIZE * DPR;
+  sparkCanvas.height = ORB_SIZE * DPR;
+  sparkCanvas.style.width = ORB_SIZE + 'px';
+  sparkCanvas.style.height = ORB_SIZE + 'px';
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+  function getAccentRgb() {
+    return getComputedStyle(root).getPropertyValue('--accent-rgb').trim() || '180, 92, 255';
+  }
+
+  let particles = [];
+  function spawnParticle() {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 0.5 + Math.random() * 1.1;
+    particles.push({
+      x: ORB_SIZE / 2, y: ORB_SIZE / 2,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 0,
+      maxLife: 55 + Math.random() * 55,
+      size: 1 + Math.random() * 2.4
+    });
+  }
+
+  function tickSparks() {
+    ctx.clearRect(0, 0, ORB_SIZE, ORB_SIZE);
+    if (particles.length < 70 && Math.random() < 0.6) spawnParticle();
+    const rgb = getAccentRgb();
+    particles.forEach((p) => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.life++;
+      const t = p.life / p.maxLife;
+      const alpha = Math.max(0, 1 - t);
+      ctx.beginPath();
+      ctx.fillStyle = `rgba(${rgb}, ${alpha})`;
+      ctx.shadowColor = `rgba(${rgb}, ${alpha})`;
+      ctx.shadowBlur = 6;
+      ctx.arc(p.x, p.y, p.size * (1 - t * 0.5), 0, Math.PI * 2);
+      ctx.fill();
+    });
+    particles = particles.filter((p) => p.life < p.maxLife);
+    requestAnimationFrame(tickSparks);
+  }
+  tickSparks();
 })();
 </script>
 
