@@ -81,7 +81,7 @@
     .home-theme-swatch .check { font-size: 13px; opacity: 0; }
     .home-theme-swatch.selected .check { opacity: 1; }
 
-    /* ===== Sphere HUD agrandie, avec davantage d'anneaux ===== */
+    /* ===== Sphere en fil de fer + anneaux electriques (canvas) ===== */
     .home-orb { width: 360px; height: 360px; position: relative; margin-bottom: 26px; perspective: 900px; }
     .home-orb::before {
       content: '';
@@ -96,49 +96,47 @@
       from { opacity: 0.6; transform: scale(0.94); }
       to   { opacity: 1; transform: scale(1.04); }
     }
-    .home-orb .core {
-      width: 168px; height: 168px;
-      margin: -84px 0 0 -84px;
+
+    /* Canvas ou sont dessines les anneaux electriques + les particules
+       (voir le script en bas de page) */
+    .orb-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+    /* Petite sphere filaire centrale, translucide, qui tourne tres vite sur
+       un seul axe (comme un globe) - les meridiens depassent legerement
+       du contour de la sphere. */
+    .sphere-wrap {
+      position: absolute; top: 50%; left: 50%;
+      width: 90px; height: 90px;
+      margin: -45px 0 0 -45px;
+      z-index: 2;
+      perspective: 500px;
     }
-    .hud-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-
-    /* Chaque anneau est incline (rotateX/rotateY) comme les anneaux de
-       Saturne, et continue de tourner sur lui-meme (rotateZ anime) - la
-       perspective posee sur .home-orb transforme ce plan incline en
-       ellipse et donne l'illusion de profondeur. */
-    @keyframes spin3d-1 { from { transform: rotateX(60deg) rotateZ(0deg); } to { transform: rotateX(60deg) rotateZ(360deg); } }
-    @keyframes spin3d-2 { from { transform: rotateX(-55deg) rotateZ(360deg); } to { transform: rotateX(-55deg) rotateZ(0deg); } }
-    @keyframes spin3d-3 { from { transform: rotateX(68deg) rotateY(15deg) rotateZ(0deg); } to { transform: rotateX(68deg) rotateY(15deg) rotateZ(360deg); } }
-    @keyframes spin3d-4 { from { transform: rotateX(-62deg) rotateY(-10deg) rotateZ(360deg); } to { transform: rotateX(-62deg) rotateY(-10deg) rotateZ(0deg); } }
-    @keyframes spin3d-static { from { transform: rotateX(50deg) rotateZ(0deg); } to { transform: rotateX(50deg) rotateZ(360deg); } }
-
-    .hud-spin-1 { animation: spin3d-1 9s linear infinite; transform-origin: 50% 50%; }
-    .hud-spin-2 { animation: spin3d-2 13s linear infinite; transform-origin: 50% 50%; }
-    .hud-spin-3 { animation: spin3d-3 17s linear infinite reverse; transform-origin: 50% 50%; }
-    .hud-spin-4 { animation: spin3d-4 6s linear infinite; transform-origin: 50% 50%; }
-    .hud-static { animation: spin3d-static 70s linear infinite; transform-origin: 50% 50%; }
-
-    /* Faisceaux lumineux qui tournent autour de la sphere, comme des rayons
-       d'energie - couleur pilotee par --accent-rgb donc suit le theme. */
-    .core-rays {
-      position: absolute;
-      top: 50%; left: 50%;
-      width: 260px; height: 260px;
-      margin: -130px 0 0 -130px;
+    .orb-shell {
+      position: absolute; inset: 0; border-radius: 50%; overflow: hidden;
+      background: radial-gradient(circle at 32% 28%, rgba(255,255,255,0.85), rgba(var(--accent-rgb), 0.55) 40%, rgba(var(--accent-rgb), 0.18) 75%, rgba(var(--accent-rgb), 0.06) 100%);
+      box-shadow: 0 0 40px 8px rgba(var(--accent-rgb), 0.45), inset -10px -12px 22px rgba(0,0,0,0.35), inset 8px 8px 16px rgba(255,255,255,0.15);
+      border: 1px solid rgba(var(--accent-rgb), 0.5);
+    }
+    .orb-shell::after {
+      content: ''; position: absolute; top: 14%; left: 20%; width: 30%; height: 22%;
       border-radius: 50%;
-      background: conic-gradient(from 0deg,
-        transparent 0deg, rgba(var(--accent-rgb), 0.55) 6deg, transparent 18deg,
-        transparent 150deg, rgba(var(--accent-rgb), 0.35) 158deg, transparent 172deg,
-        transparent 330deg, rgba(var(--accent-rgb), 0.45) 338deg, transparent 352deg);
-      filter: blur(4px);
-      mix-blend-mode: screen;
-      animation: raysSpin 6s linear infinite;
-      pointer-events: none;
+      background: radial-gradient(circle, rgba(255,255,255,0.8), rgba(255,255,255,0) 70%);
+      filter: blur(1px);
     }
-    @keyframes raysSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-
-    /* Etincelles qui partent du centre de la sphere (canvas, voir le script) */
-    .orb-sparks { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+    .orb-lines {
+      position: absolute; inset: -8%; border-radius: 50%; overflow: hidden;
+      transform-style: preserve-3d;
+      animation: turnSlow 0.12s linear infinite;
+    }
+    .orb-lines .gc { position: absolute; inset: 0; border-radius: 50%; border: 0.8px solid rgba(255,255,255,0.55); }
+    .orb-lines .gc1 { transform: rotateY(15deg); }
+    .orb-lines .gc2 { transform: rotateY(75deg); }
+    .orb-lines .gc3 { transform: rotateY(135deg); }
+    .orb-lines .gc4 { transform: rotateX(80deg); }
+    @keyframes turnSlow {
+      from { transform: rotateY(0deg); }
+      to   { transform: rotateY(360deg); }
+    }
 
     /* ===== Indice secret qui apparait de temps en temps, a une position   */
     /* aleatoire (calculee en JS) tout autour de la sphere.                 */
@@ -194,73 +192,17 @@
   <main class="home-container">
 
     <div class="home-orb">
-      <!-- Anneaux exterieurs fins, gradues comme un cadran -->
-      <svg class="hud-svg hud-static" viewBox="0 0 200 200">
-        <circle cx="100" cy="100" r="97" fill="none" style="stroke:var(--violet-deep)" stroke-width="1" stroke-dasharray="1 5" opacity="0.4"/>
-        <circle cx="100" cy="100" r="94" fill="none" style="stroke:var(--border)" stroke-width="1" stroke-dasharray="1 6" opacity="0.8"/>
-        <circle cx="100" cy="100" r="86" fill="none" style="stroke:var(--violet-deep)" stroke-width="1.3" stroke-dasharray="8 5" opacity="0.35"/>
-      </svg>
+      <canvas class="orb-canvas" id="orbCanvas"></canvas>
 
-      <!-- Grand arc segmente qui tourne, effet "radar" -->
-      <svg class="hud-svg hud-spin-3" viewBox="0 0 200 200">
-        <defs>
-          <linearGradient id="hg3" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" style="stop-color:var(--violet-deep);stop-opacity:0"/>
-            <stop offset="100%" style="stop-color:var(--violet);stop-opacity:0.9"/>
-          </linearGradient>
-        </defs>
-        <circle cx="100" cy="100" r="80" fill="none" stroke="url(#hg3)" stroke-width="2"
-                stroke-dasharray="70 180" stroke-linecap="round"/>
-        <circle cx="20" cy="100" r="3" style="fill:var(--violet-pale);filter:drop-shadow(0 0 4px var(--violet))"/>
-      </svg>
-
-      <!-- Arc segmente qui tourne, effet "radar" -->
-      <svg class="hud-svg hud-spin-1" viewBox="0 0 200 200">
-        <defs>
-          <linearGradient id="hg1" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" style="stop-color:var(--violet-pale);stop-opacity:0"/>
-            <stop offset="100%" style="stop-color:var(--violet-pale);stop-opacity:1"/>
-          </linearGradient>
-        </defs>
-        <circle cx="100" cy="100" r="70" fill="none" stroke="url(#hg1)" stroke-width="2.5"
-                stroke-dasharray="95 145" stroke-linecap="round"/>
-        <circle cx="170" cy="100" r="4" style="fill:var(--violet-pale);filter:drop-shadow(0 0 4px var(--violet))"/>
-      </svg>
-
-      <!-- Anneau interieur pointille, tourne dans l'autre sens -->
-      <svg class="hud-svg hud-spin-2" viewBox="0 0 200 200">
-        <circle cx="100" cy="100" r="54" fill="none" style="stroke:var(--violet)" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.7"/>
-        <circle cx="100" cy="46" r="2.5" style="fill:var(--violet)"/>
-      </svg>
-
-      <!-- Petit anneau tout interieur, tourne vite -->
-      <svg class="hud-svg hud-spin-4" viewBox="0 0 200 200">
-        <circle cx="100" cy="100" r="40" fill="none" style="stroke:var(--violet-pale)" stroke-width="1" stroke-dasharray="2 4" opacity="0.6"/>
-      </svg>
-
-      <!-- Petits accents de "donnees" qui depassent, style HUD -->
-      <svg class="hud-svg hud-static" viewBox="0 0 200 200">
-        <g style="stroke:var(--violet)" stroke-width="1" opacity="0.65">
-          <line x1="167" y1="43" x2="180" y2="34"/>
-          <line x1="180" y1="137" x2="193" y2="144"/>
-          <line x1="85" y1="187" x2="82" y2="200"/>
-          <line x1="20" y1="137" x2="7" y2="143"/>
-          <line x1="24" y1="56" x2="11" y2="49"/>
-          <line x1="176" y1="80" x2="192" y2="76"/>
-        </g>
-        <g style="fill:var(--violet-pale)">
-          <circle cx="180" cy="34" r="1.8"/>
-          <circle cx="193" cy="144" r="1.8"/>
-          <circle cx="82" cy="200" r="1.8"/>
-          <circle cx="7" cy="143" r="1.8"/>
-          <circle cx="11" cy="49" r="1.8"/>
-          <circle cx="192" cy="76" r="1.8"/>
-        </g>
-      </svg>
-
-      <div class="core-rays"></div>
-      <div class="core"></div>
-      <canvas class="orb-sparks" id="orbSparks"></canvas>
+      <div class="sphere-wrap">
+        <div class="orb-shell"></div>
+        <div class="orb-lines">
+          <div class="gc gc1"></div>
+          <div class="gc gc2"></div>
+          <div class="gc gc3"></div>
+          <div class="gc gc4"></div>
+        </div>
+      </div>
 
       <div class="secret-hint" id="secretHint">
         <span id="secretHintText">/game</span>
@@ -410,19 +352,88 @@
   setInterval(showRandomHint, 9000);
   setTimeout(showRandomHint, 2500);
 
-  // ===== Etincelles qui partent du centre de la sphere =====
-  const sparkCanvas = document.getElementById('orbSparks');
-  const ctx = sparkCanvas.getContext('2d');
+  // ===== Anneaux electriques + particules autour de la sphere =====
+  const orbCanvas = document.getElementById('orbCanvas');
+  const octx = orbCanvas.getContext('2d');
   const ORB_SIZE = 360;
   const DPR = window.devicePixelRatio || 1;
-  sparkCanvas.width = ORB_SIZE * DPR;
-  sparkCanvas.height = ORB_SIZE * DPR;
-  sparkCanvas.style.width = ORB_SIZE + 'px';
-  sparkCanvas.style.height = ORB_SIZE + 'px';
-  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  orbCanvas.width = ORB_SIZE * DPR;
+  orbCanvas.height = ORB_SIZE * DPR;
+  orbCanvas.style.width = ORB_SIZE + 'px';
+  orbCanvas.style.height = ORB_SIZE + 'px';
+  octx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  const OCX = ORB_SIZE / 2, OCY = ORB_SIZE / 2;
 
   function getAccentRgb() {
     return getComputedStyle(root).getPropertyValue('--accent-rgb').trim() || '180, 92, 255';
+  }
+
+  // Petites branches courtes utilisees pour les etincelles qui sautent
+  // depuis un anneau de temps en temps.
+  function buildSpark(x, y, angle, len, depth, list) {
+    const a = angle + (Math.random() - 0.5) * 0.9;
+    const x2 = x + Math.cos(a) * len;
+    const y2 = y + Math.sin(a) * len;
+    list.push({ x1: x, y1: y, x2, y2 });
+    if (depth > 0 && len > 4) {
+      const children = Math.random() < 0.75 ? 2 : 1;
+      for (let i = 0; i < children; i++) {
+        buildSpark(x2, y2, a + (Math.random() - 0.5) * 1.6, len * (0.55 + Math.random() * 0.2), depth - 1, list);
+      }
+    }
+  }
+
+  // Projection d'un anneau (cercle) incline en 3D (tx, ty) et qui tourne
+  // sur lui-meme (spin), sans vraie perspective (approximation orthographique
+  // suffisante a cette echelle).
+  function ringPoint(R, tx, ty, spin, theta) {
+    const x0 = R * Math.cos(theta + spin);
+    const y0 = R * Math.sin(theta + spin);
+    const y1 = y0 * Math.cos(tx);
+    const z1 = y0 * Math.sin(tx);
+    const x2 = x0 * Math.cos(ty) + z1 * Math.sin(ty);
+    return { x: x2, y: y1 };
+  }
+
+  const RINGS = [
+    { R: 86,  tx: 80 * Math.PI / 180, ty: 0,                 speed: 2 * Math.PI / (9 * 60),  dir: 1  },
+    { R: 112, tx: 20 * Math.PI / 180, ty: 70 * Math.PI / 180, speed: 2 * Math.PI / (14 * 60), dir: -1 },
+    { R: 138, tx: 45 * Math.PI / 180, ty: 40 * Math.PI / 180, speed: 2 * Math.PI / (19 * 60), dir: 1  },
+    { R: 159, tx: -55 * Math.PI / 180, ty: -20 * Math.PI / 180, speed: 2 * Math.PI / (12 * 60), dir: -1 },
+    { R: 142, tx: 8 * Math.PI / 180, ty: -55 * Math.PI / 180, speed: 2 * Math.PI / (23 * 60), dir: 1  },
+    { R: 170, tx: 65 * Math.PI / 180, ty: 15 * Math.PI / 180, speed: 2 * Math.PI / (17 * 60), dir: -1 }
+  ];
+  RINGS.forEach((r) => { r.spin = Math.random() * Math.PI * 2; });
+
+  function drawElectricRing(ring, rgb) {
+    const STEPS = 100;
+    const pts = [];
+    for (let i = 0; i <= STEPS; i++) {
+      const theta = (i / STEPS) * Math.PI * 2;
+      const jitterR = ring.R + (Math.random() - 0.5) * 3;
+      const p = ringPoint(jitterR, ring.tx, ring.ty, ring.spin, theta);
+      pts.push({ x: OCX + p.x, y: OCY + p.y });
+    }
+    octx.beginPath();
+    pts.forEach((p, i) => { if (i === 0) octx.moveTo(p.x, p.y); else octx.lineTo(p.x, p.y); });
+    octx.closePath();
+    octx.strokeStyle = `rgba(${rgb}, 0.45)`;
+    octx.lineWidth = 0.9;
+    octx.shadowColor = `rgba(${rgb}, 0.45)`;
+    octx.shadowBlur = 6;
+    octx.stroke();
+    return pts;
+  }
+
+  let ringSparks = [];
+  function maybeSpawnRingSpark(pts) {
+    if (Math.random() < 0.015 && pts.length) {
+      const p = pts[Math.floor(Math.random() * pts.length)];
+      const angle = Math.atan2(p.y - OCY, p.x - OCX);
+      const list = [];
+      buildSpark(p.x, p.y, angle, 7 + Math.random() * 5, 2, list);
+      ringSparks.push({ segs: list, life: 0, maxLife: 14 });
+    }
   }
 
   let particles = [];
@@ -430,7 +441,7 @@
     const angle = Math.random() * Math.PI * 2;
     const speed = 0.5 + Math.random() * 1.1;
     particles.push({
-      x: ORB_SIZE / 2, y: ORB_SIZE / 2,
+      x: OCX, y: OCY,
       vx: Math.cos(angle) * speed,
       vy: Math.sin(angle) * speed,
       life: 0,
@@ -439,27 +450,53 @@
     });
   }
 
-  function tickSparks() {
-    ctx.clearRect(0, 0, ORB_SIZE, ORB_SIZE);
-    if (particles.length < 70 && Math.random() < 0.6) spawnParticle();
+  function tickOrb() {
+    octx.clearRect(0, 0, ORB_SIZE, ORB_SIZE);
     const rgb = getAccentRgb();
+
+    RINGS.forEach((ring) => {
+      ring.spin += ring.speed * ring.dir;
+      const pts = drawElectricRing(ring, rgb);
+      maybeSpawnRingSpark(pts);
+    });
+    octx.shadowBlur = 0;
+
+    ringSparks.forEach((s) => {
+      s.life++;
+      const alpha = Math.max(0, 1 - s.life / s.maxLife);
+      s.segs.forEach((b) => {
+        octx.beginPath();
+        octx.moveTo(b.x1, b.y1);
+        octx.lineTo(b.x2, b.y2);
+        octx.strokeStyle = `rgba(255,255,255,${alpha})`;
+        octx.shadowColor = `rgba(${rgb}, 0.9)`;
+        octx.shadowBlur = 6;
+        octx.lineWidth = 1;
+        octx.stroke();
+      });
+    });
+    ringSparks = ringSparks.filter((s) => s.life < s.maxLife);
+    octx.shadowBlur = 0;
+
+    if (particles.length < 70 && Math.random() < 0.6) spawnParticle();
     particles.forEach((p) => {
       p.x += p.vx;
       p.y += p.vy;
       p.life++;
       const t = p.life / p.maxLife;
       const alpha = Math.max(0, 1 - t);
-      ctx.beginPath();
-      ctx.fillStyle = `rgba(${rgb}, ${alpha})`;
-      ctx.shadowColor = `rgba(${rgb}, ${alpha})`;
-      ctx.shadowBlur = 6;
-      ctx.arc(p.x, p.y, p.size * (1 - t * 0.5), 0, Math.PI * 2);
-      ctx.fill();
+      octx.beginPath();
+      octx.fillStyle = `rgba(${rgb}, ${alpha})`;
+      octx.shadowColor = `rgba(${rgb}, ${alpha})`;
+      octx.shadowBlur = 6;
+      octx.arc(p.x, p.y, p.size * (1 - t * 0.5), 0, Math.PI * 2);
+      octx.fill();
     });
     particles = particles.filter((p) => p.life < p.maxLife);
-    requestAnimationFrame(tickSparks);
+
+    requestAnimationFrame(tickOrb);
   }
-  tickSparks();
+  tickOrb();
 })();
 </script>
 
