@@ -59,8 +59,22 @@
         <button class="menu-item hidden-controls" id="btnExitSpectra">
           <span class="menu-icon">🚪</span> Quitter le mode Spectra
         </button>
+        <div class="menu-divider"></div>
+        <button class="menu-item" id="btnLogout">
+          <span class="menu-icon">🔒</span> Se déconnecter
+        </button>
       </div>
     </header>
+
+    <div class="login-overlay" id="loginOverlay">
+      <form class="login-box" id="loginForm">
+        <h2>Connexion à Gen</h2>
+        <input type="text" id="loginUsername" placeholder="Identifiant" autocomplete="username" required>
+        <input type="password" id="loginPassword" placeholder="Mot de passe" autocomplete="current-password" required>
+        <button type="submit">Se connecter</button>
+        <div class="login-error" id="loginError"></div>
+      </form>
+    </div>
 
     <main id="messages" class="messages"></main>
 
@@ -207,6 +221,7 @@
   const btnImage = document.getElementById('btnImage');
   const newConvBtn = document.getElementById('newConvBtn');
   const btnExitSpectra = document.getElementById('btnExitSpectra');
+  const btnLogout = document.getElementById('btnLogout');
   const spectraDivider = document.getElementById('spectraDivider');
   const historyList = document.getElementById('historyList');
 
@@ -244,20 +259,71 @@
     messagesEl.innerHTML = messages.map(m => `
       <div class="message ${m.user ? 'user' : 'ai'}">${escapeHtml(m.text)}</div>
     `).join('') + ((thinking || speaking) ? `
-      <div class="typing"><div class="typing-orb"></div></div>
+      <div class="typing"><div class="typing-cluster">
+        <div class="typing-ring layer1"></div>
+        <div class="typing-ring layer2"></div>
+        <div class="typing-ring layer3"></div>
+        <div class="typing-orb-spin">
+          <div class="orb-shell"></div>
+          <div class="orb-lines">
+            <div class="gc gc1"></div>
+            <div class="gc gc2"></div>
+            <div class="gc gc3"></div>
+            <div class="gc gc4"></div>
+          </div>
+        </div>
+      </div></div>
     ` : '');
     messagesEl.scrollTop = messagesEl.scrollHeight;
     saveActive();
   }
 
-  function getAccessCode() {
-    let code = localStorage.getItem('genAccessCode');
-    if (!code) {
-      code = window.prompt("Code d'accès à Gen :");
-      if (code) localStorage.setItem('genAccessCode', code);
-    }
-    return code || '';
+  // ===== Connexion (compte perso) =====
+  const loginOverlay = document.getElementById('loginOverlay');
+  const loginForm = document.getElementById('loginForm');
+  const loginUsername = document.getElementById('loginUsername');
+  const loginPassword = document.getElementById('loginPassword');
+  const loginError = document.getElementById('loginError');
+
+  function getToken() {
+    return localStorage.getItem('genToken') || '';
   }
+  function setToken(token) {
+    localStorage.setItem('genToken', token);
+  }
+  function clearToken() {
+    localStorage.removeItem('genToken');
+  }
+  function showLogin() {
+    loginOverlay.classList.add('open');
+  }
+  function hideLogin() {
+    loginOverlay.classList.remove('open');
+  }
+
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    loginError.textContent = '';
+    try {
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: loginUsername.value.trim(), password: loginPassword.value })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        loginError.textContent = data.error || "Connexion impossible";
+        return;
+      }
+      setToken(data.token);
+      loginPassword.value = '';
+      hideLogin();
+    } catch (err) {
+      loginError.textContent = "Impossible de joindre le serveur.";
+    }
+  });
+
+  if (!getToken()) showLogin();
 
   function speak(text) {
     if (!speakEnabled || !('speechSynthesis' in window)) return;
@@ -317,12 +383,13 @@
     try {
       const response = await fetch(API_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-gen-secret": getAccessCode() },
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + getToken() },
         body: JSON.stringify({ messages: messages.slice(-20), mode })
       });
       if (response.status === 401) {
-        localStorage.removeItem('genAccessCode');
-        throw new Error("Code d'accès incorrect. Recharge la page.");
+        clearToken();
+        showLogin();
+        throw new Error("Session expirée, reconnecte-toi.");
       }
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Erreur serveur");
@@ -523,6 +590,11 @@
     });
   }
   newConvBtn.addEventListener('click', startNewConversation);
+  btnLogout.addEventListener('click', () => {
+    closeMenu();
+    clearToken();
+    showLogin();
+  });
 
   function updateSpectraMenuVisibility() {
     btnExitSpectra.classList.toggle('hidden-controls', !spectraUnlocked);
