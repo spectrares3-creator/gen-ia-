@@ -55,54 +55,6 @@ body.home {
   position: relative;
   margin-bottom: 20px;
 }
-@keyframes spin1 { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-@keyframes spin2 { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
-
-.home-orb .core {
-  position: absolute;
-  top: 50%; left: 50%;
-  width: 90px; height: 90px;
-  margin: -45px 0 0 -45px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, var(--core-light, #f0d9ff), var(--violet) 45%, var(--core-dark, #4d0b7a) 85%);
-  animation: pulse 1.3s ease-in-out infinite alternate;
-  box-shadow: 0 0 40px 6px rgba(var(--accent-rgb), 0.5), inset -10px -12px 22px rgba(0,0,0,0.35);
-  transform-style: preserve-3d;
-}
-.home-orb .core::before {
-  content: '';
-  position: absolute;
-  inset: -12%;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 30% 70%, rgba(var(--accent-rgb), 0.9), transparent 55%),
-    radial-gradient(circle at 70% 32%, rgba(var(--accent-rgb), 0.7), transparent 50%),
-    radial-gradient(circle at 50% 50%, var(--core-light, #f0d9ff), transparent 60%);
-  mix-blend-mode: screen;
-  filter: blur(2px);
-  animation: plasmaChurn 2.6s ease-in-out infinite;
-  pointer-events: none;
-}
-@keyframes plasmaChurn {
-  0%   { transform: rotate(0deg)   scale(1);    opacity: 0.85; }
-  50%  { transform: rotate(180deg) scale(1.14); opacity: 1;    }
-  100% { transform: rotate(360deg) scale(1);    opacity: 0.85; }
-}
-.home-orb .core::after {
-  content: '';
-  position: absolute;
-  top: 16%; left: 22%;
-  width: 32%; height: 24%;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255,255,255,0.65), rgba(255,255,255,0) 70%);
-  filter: blur(1px);
-  pointer-events: none;
-}
-@keyframes pulse {
-  0%   { transform: scale(0.96) rotateX(0deg)  rotateY(0deg); }
-  50%  { transform: scale(1.02) rotateX(5deg)  rotateY(10deg); }
-  100% { transform: scale(1.06) rotateX(-4deg) rotateY(-8deg); }
-}
 
 .logo {
   font-size: 40px;
@@ -463,14 +415,100 @@ header span::before {
   align-items: center;
   padding: 10px 16px;
 }
-.typing-orb {
+.typing-cluster {
+  position: relative;
+  width: 70px;
+  height: 70px;
+  perspective: 300px;
+}
+
+/* Anneaux flous faits de petites touches (comme un nuage de particules en
+   rotation) - plusieurs couches a des vitesses/sens/espacements differents
+   pour un effet dense et un peu "vivant", sans canvas ni JS. */
+.typing-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+}
+.typing-ring.layer1 {
+  background: repeating-conic-gradient(rgba(var(--accent-rgb), 0.9) 0deg 1deg, transparent 1deg 2.6deg);
+  -webkit-mask: radial-gradient(circle, transparent 56%, #000 62%, #000 74%, transparent 80%);
+          mask: radial-gradient(circle, transparent 56%, #000 62%, #000 74%, transparent 80%);
+  filter: blur(0.5px);
+  opacity: 0.9;
+  animation: ringTurn 3.2s linear infinite;
+}
+.typing-ring.layer2 {
+  background: repeating-conic-gradient(rgba(var(--accent-rgb), 0.6) 0deg 0.6deg, transparent 0.6deg 2deg);
+  -webkit-mask: radial-gradient(circle, transparent 50%, #000 59%, #000 82%, transparent 88%);
+          mask: radial-gradient(circle, transparent 50%, #000 59%, #000 82%, transparent 88%);
+  filter: blur(0.8px);
+  opacity: 0.7;
+  animation: ringTurn 5.5s linear infinite reverse;
+}
+.typing-ring.layer3 {
+  background: repeating-conic-gradient(rgba(var(--accent-rgb), 0.45) 0deg 0.8deg, transparent 0.8deg 2.4deg);
+  -webkit-mask: radial-gradient(circle, transparent 62%, #000 67%, #000 70%, transparent 76%);
+          mask: radial-gradient(circle, transparent 62%, #000 67%, #000 70%, transparent 76%);
+  filter: blur(0.4px);
+  opacity: 0.8;
+  animation: ringTurn 2.1s linear infinite;
+}
+@keyframes ringTurn { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+.typing-orb-spin {
+  position: absolute;
+  top: 50%; left: 50%;
   width: 30px;
   height: 30px;
+  margin: -15px 0 0 -15px;
+  transform-style: preserve-3d;
+}
+
+/* Coque translucide de la sphere - un cercle simple suffit : la silhouette
+   d'une sphere reste circulaire quel que soit l'angle de vue, seul le
+   maillage de surface tourne (voir .orb-lines). */
+.orb-shell {
+  position: absolute;
+  inset: 0;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, var(--core-light, #f0d9ff), var(--violet) 45%, var(--core-dark, #4d0b7a) 85%);
-  box-shadow: 0 0 16px 3px rgba(var(--accent-rgb), 0.55);
+  overflow: hidden;
+  background: radial-gradient(circle at 35% 28%, rgba(255,255,255,0.4), rgba(var(--accent-rgb), 0.32) 45%, rgba(var(--accent-rgb), 0.14) 85%);
+  border: 1px solid rgba(var(--accent-rgb), 0.65);
+  box-shadow: 0 0 16px 3px rgba(var(--accent-rgb), 0.55), inset -4px -5px 8px rgba(0,0,0,0.25);
   animation: typingBeat 0.7s ease-in-out infinite alternate;
 }
+.orb-shell::after {
+  content: '';
+  position: absolute;
+  top: 14%; left: 20%;
+  width: 32%; height: 24%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.75), rgba(255,255,255,0) 70%);
+  filter: blur(0.5px);
+}
+
+/* Meridiens du globe filaire : 4 cercles inclines differemment qui, groupes
+   ensemble et tournes en 3D, donnent l'effet d'un globe qui tourne. */
+.orb-lines {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  transform-style: preserve-3d;
+  animation: orbSpin 4s linear infinite;
+}
+.orb-lines .gc {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 0.7px solid rgba(255,255,255,0.6);
+}
+.orb-lines .gc1 { transform: rotateY(15deg); }
+.orb-lines .gc2 { transform: rotateY(75deg); }
+.orb-lines .gc3 { transform: rotateY(135deg); }
+.orb-lines .gc4 { transform: rotateX(80deg); }
+@keyframes orbSpin { from { transform: rotateY(0deg); } to { transform: rotateY(360deg); } }
 @keyframes typingBeat {
   from { transform: scale(0.8); box-shadow: 0 0 10px 2px rgba(var(--accent-rgb), 0.4); }
   to   { transform: scale(1.15); box-shadow: 0 0 20px 5px rgba(var(--accent-rgb), 0.7); }
